@@ -1,0 +1,134 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.30.0"
+    }
+}
+plugins {
+    id 'java-library'
+    id 'org.cadixdev.licenser' version '0.6.1'
+    id 'eclipse'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+group = "io.github.matyrobbrt"
+archivesBaseName = "asmutils"
+version = "${version}"
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+def asmVersion = '9.2'
+def libraries = [
+	"org.ow2.asm:asm": asmVersion,	
+	"org.ow2.asm:asm-commons": asmVersion,	
+	"org.ow2.asm:asm-tree": asmVersion
+]
+
+dependencies {
+	libraries.each { entry ->
+		implementation("$entry.key:$entry.value")
+	}
+	compileOnly group: 'org.jetbrains', name: 'annotations', version: '23.0.0'
+	
+	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.36'
+	testImplementation group: 'io.github.cdimascio', name: 'dotenv-java', version: '2.2.3'
+	testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.22.0'
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.8.2'
+}
+
+license {
+    header = file("$rootDir/licenseheader.txt")
+    properties {
+        name = 'Matyrobbrt'
+        year = 2022
+    }
+
+    include '**/*.java'
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+// TODO fix maven names and stuff
+allprojects {
+    compileJava {
+        options.release = 17
+    }
+    javadoc.options.addStringOption('Xdoclint:none', '-quiet')
+    
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
+    apply plugin: 'io.codearte.nexus-staging'
+    publishing {
+        publications{
+            mavenJava(MavenPublication) {
+                from components.java
+                pom {
+                    name = "asmutils"
+                    description = "A library consisting of ASM utilities."
+                    url = 'https://github.com/Matyrobbrt/ASMUtils'
+                    licenses {
+                        license {
+                            name = 'MIT License'
+                            url = 'http://www.opensource.org/licenses/mit-license.php'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'matyrobbrt'
+                            name = 'Matyrobbrt'
+                            email = 'matyrobbrt@gmail.com'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:git:github.com/matyrobbrt/asmutils.git'
+                        developerConnection = 'scm:git:ssh://github.com/Matyrobbrt/ASMUtils.git'
+                        url = 'https://github.com/Matyrobbrt/ASMUtils'
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                name = "OSSRH"
+                url = project.hasProperty("snapshot") ?
+                        "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                        : "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                credentials {
+                    username = ossrhUser
+                    password = ossrhPassword
+                }
+            }
+        }
+    }
+    signing {
+        sign publishing.publications.mavenJava
+    }
+    nexusStaging {
+        serverUrl = "https://s01.oss.sonatype.org/service/local/"
+        username = ossrhUser
+        password = ossrhPassword
+    }
+    if (project.hasProperty("close")) {
+        tasks.publish.finalizedBy closeAndReleaseRepository
+    }
+    jar {
+        destinationDirectory = file("./build/libs/${version}/")
+    }
+    javadocJar {
+        destinationDirectory = file("./build/libs/${version}/")
+    }
+    sourcesJar {
+        destinationDirectory = file("./build/libs/${version}/")
+    }
+}
+
+compileJava.options.encoding = "UTF-8"
