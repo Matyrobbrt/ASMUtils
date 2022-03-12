@@ -27,17 +27,13 @@
 
 package asmutils;
 
-import java.util.function.Consumer;
+public class ConstructorWrapperTestObject {
 
-public class Thing {
+	public final String c;
+	public final String h;
 
-	private final Consumer<String> consumer;
-
-	public Thing(Consumer<String> consumer) {
-		this.consumer = consumer;
-	}
-
-	public void accept(String str) {
-		consumer.accept(str);
+	public ConstructorWrapperTestObject(String a, String b, String c, String d, String e, String f, String g, String h) {
+		this.h = h;
+		this.c = c;
 	}
 }

@@ -27,7 +27,9 @@ def asmVersion = '9.2'
 def libraries = [
 	"org.ow2.asm:asm": asmVersion,	
 	"org.ow2.asm:asm-commons": asmVersion,	
-	"org.ow2.asm:asm-tree": asmVersion
+	"org.ow2.asm:asm-tree": asmVersion,
+	
+	"org.slf4j:slf4j-api": '1.7.36'
 ]
 
 dependencies {

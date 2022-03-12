@@ -27,9 +27,6 @@
 
 package io.github.matyrobbrt.asmutils.wrapper;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -43,6 +40,8 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -82,9 +81,9 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 	Type TYPE = Type.getType(ConsumerWrapper.class);
 
 	/**
-	 * A variant of {@link #create(Method)}, which gets the method with the name
+	 * A variant of {@link #wrap(Method)}, which gets the method with the name
 	 * {@code methodName} and the parameter {@code parameterType} from the
-	 * {@code declaringClass}
+	 * {@code declaringClass}.
 	 * 
 	 * @param  <T>                   the type of the parameter of the method
 	 * @param  declaringClass        the class containing the method to wrap
@@ -95,11 +94,11 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 	 * @throws SecurityException     if
 	 *                               {@link java.lang.Class#getDeclaredMethod(String, Class...)}
 	 *                               throws a {@link SecurityException}
-	 * @see                          #create(Method)
+	 * @see                          #wrap(Method)
 	 */
-	static <T> ConsumerWrapper<T> create(@NotNull Class<?> declaringClass, @NotNull String methodName,
+	static <T> ConsumerWrapper<T> wrap(@NotNull Class<?> declaringClass, @NotNull String methodName,
 			@NotNull Class<T> parameterType) throws NoSuchMethodException, SecurityException {
-		return create(declaringClass.getDeclaredMethod(methodName, parameterType));
+		return wrap(declaringClass.getDeclaredMethod(methodName, parameterType));
 	}
 
 	/**
@@ -113,15 +112,22 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 	 *                                  <ul>
 	 *                                  <li>the method doesn't have only one
 	 *                                  parameter</li>
+	 *                                  <li>the declaring class of the method is not
+	 *                                  public</li>
 	 *                                  <li>the method is not public</li>
 	 *                                  <li>the method has a return type (doesn't
 	 *                                  return void)</li>
 	 *                                  </ul>
 	 */
 	@SuppressWarnings("unchecked")
-	static <T> ConsumerWrapper<T> create(@NotNull Method method) {
+	static <T> ConsumerWrapper<T> wrap(@NotNull Method method) {
 		return (ConsumerWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(method, $ -> {
 			final var isStatic = Modifier.isStatic(method.getModifiers());
+			if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
+				throw new IllegalArgumentException(
+						"Cannot create consumer wrapper for method \"%s\", as its declaring class is not public!"
+								.formatted(method));
+			}
 			if (method.getParameterTypes().length != 1) {
 				throw new IllegalArgumentException(
 						"Cannot create consumer wrapper for method \"%s\", as it doesn't have only one parameter!"
@@ -137,13 +143,16 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 								.formatted(method));
 			}
 			final var parameterType = method.getParameterTypes()[0];
-			final var inputDescriptor = org.objectweb.asm.Type.getDescriptor(parameterType);
-			final var inputName = org.objectweb.asm.Type.getInternalName(parameterType);
-			final var ownerDescriptor = org.objectweb.asm.Type.getDescriptor(method.getDeclaringClass());
-			final var ownerName = org.objectweb.asm.Type.getInternalName(method.getDeclaringClass());
+			final var inputDescriptor = Type.getDescriptor(parameterType);
+			final var inputName = Type.getInternalName(parameterType);
+			final var owner = method.getDeclaringClass();
+			final var ownerDescriptor = Type.getDescriptor(owner);
+			final var ownerName = Type.getInternalName(owner);
 			final var generatedName = PrivateUtils.generateName(method);
 			final var generatedNameDescriptor = "L" + generatedName.replace('.', '/') + ";";
 			final var consumerMethodDescriptor = "(%s)V".formatted(inputDescriptor);
+
+			PrivateUtils.LOGGER.debug("Generating ConsumerWrapper for method \"{}\"...", method);
 
 			ClassWriter cw = new ClassWriter(0);
 			FieldVisitor fieldVisitor;
@@ -201,7 +210,8 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 					mv.visitLabel(label0);
 					mv.visitLineNumber(9, label0);
 					mv.visitVarInsn(ALOAD, 1);
-					mv.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(), consumerMethodDescriptor, false);
+					mv.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(), Type.getMethodDescriptor(method),
+							false);
 					Label l1 = new Label();
 					mv.visitLabel(l1);
 					mv.visitLineNumber(10, l1);
@@ -216,7 +226,8 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 					mv.visitVarInsn(ALOAD, 0);
 					mv.visitFieldInsn(GETFIELD, generatedName, "instance", ownerDescriptor);
 					mv.visitVarInsn(ALOAD, 1);
-					mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), consumerMethodDescriptor, false);
+					mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), Type.getMethodDescriptor(method),
+							false);
 					Label l1 = new Label();
 					mv.visitLabel(l1);
 					mv.visitLineNumber(16, l1);
@@ -246,6 +257,7 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 			}
 			cw.visitEnd();
 			final var bytes = cw.toByteArray();
+			PrivateUtils.LOGGER.debug("Finished generating ConsumerWrapper for method \"{}\"", method);
 			return new ConsumerWrapper<T>() {
 
 				@SuppressWarnings("rawtypes")
@@ -253,12 +265,9 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 						() -> isStatic ? (Consumer) getGeneratedClass().getDeclaredConstructor().newInstance() : null)
 						.get();
 				// TODO replace with a (future) constructor wrapper
-				final MethodHandle handle = LambdaUtils.rethrowSupplier(() -> {
-					if (isStatic) { return null; }
-					final var lookup = MethodHandles.lookup();
-					final var mType = MethodType.methodType(void.class, method.getDeclaringClass());
-					return lookup.findConstructor(getGeneratedClass(), mType);
-				}).get();
+				final ConstructorWrapper<?> constructorWrapper = isStatic ? null
+						: LambdaUtils.rethrowSupplier(
+								() -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
 
 				@Override
 				public byte[] getClassBytes() {
@@ -277,7 +286,7 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 								"The method wrapped by this wrapper (\"%s\") is static! Use `accept` instead."
 										.formatted(method));
 					}
-					return LambdaUtils.rethrowSupplier(() -> (Consumer<T>) handle.invokeWithArguments(target)).get();
+					return (Consumer<T>) constructorWrapper.invoke(target);
 				}
 
 				@Override
@@ -347,6 +356,7 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 
 	//@formatter:off
 	class PrivateUtils {
+		private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerWrapper.class);
 		private static final Map<Method, ConsumerWrapper<?>> CACHE = new HashMap<>();
 		private static final AtomicInteger CREATED_WRAPPERS = new AtomicInteger();
 		private static String generateName(Method method) {

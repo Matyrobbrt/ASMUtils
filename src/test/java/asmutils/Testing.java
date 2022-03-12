@@ -27,6 +27,26 @@
 
 package asmutils;
 
+import java.lang.reflect.Constructor;
+
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.github.matyrobbrt.asmutils.wrapper.ConstructorWrapper;
+
+@SuppressWarnings({
+		"static-method", "unchecked"
+})
 class Testing {
+
+	@Test
+	void testConstructorWrapper() throws Exception {
+		final var wrapper = ConstructorWrapper
+				.<ConstructorWrapperTestObject>wrap((Constructor<ConstructorWrapperTestObject>) ConstructorWrapperTestObject.class.getDeclaredConstructors()[0]);
+		final var thing = wrapper.invoke(null, "thing c", null, null, null, null, "thing h");
+		assertThat(thing.c).isSameAs("thing c");
+		assertThat(thing.h).isSameAs("thing h");
+	}
 
 }
