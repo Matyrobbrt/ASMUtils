@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.matyrobbrt.asmutils.wrapper.ConstructorWrapper;
+import io.github.matyrobbrt.asmutils.wrapper.SupplierWrapper;
 
 @SuppressWarnings({
 		"static-method", "unchecked"
@@ -47,6 +48,31 @@ class Testing {
 		final var thing = wrapper.invoke(null, null, "thing c", null, null, null, null, "thing h");
 		assertThat(thing.c).isSameAs("thing c");
 		assertThat(thing.h).isSameAs("thing h");
+	}
+
+	@Test
+	void testSupplierWrapperOnInstance() throws Exception {
+		final var wrapper = SupplierWrapper.<String>wrapMethod(SupplierWrapperTestObject.class.getDeclaredMethod("print"));
+		assertThat(wrapper.onTarget(new SupplierWrapperTestObject("yes")).get()).isSameAs("yes");
+	}
+
+	@Test
+	void testSupplierWrapperStatic() throws Exception {
+		final var wrapper = SupplierWrapper.<String>wrapMethod(SupplierWrapperTestObject.class.getDeclaredMethod("hmm"));
+		System.out.println(wrapper.get());
+		assertThat(wrapper.get()).isSameAs("hmm");
+	}
+
+	@Test
+	void testSupplierWrapperOnInstanceField() throws Exception {
+		final var wrapper = SupplierWrapper.<String>wrapField(TestObject.class.getDeclaredField("thing"));
+		assertThat(wrapper.onTarget(new TestObject("yes")).get()).isSameAs("yes");
+	}
+
+	@Test
+	void testSupplierWrapperOnStaticField() throws Exception {
+		final var wrapper = SupplierWrapper.<String>wrapField(TestObject.class.getDeclaredField("THING"));
+		assertThat(wrapper.get()).isSameAs("ye");
 	}
 
 }

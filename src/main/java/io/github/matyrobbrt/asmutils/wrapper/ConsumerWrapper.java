@@ -126,21 +126,21 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 			final var isStatic = Modifier.isStatic(method.getModifiers());
 			if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
 				throw new IllegalArgumentException(
-						"Cannot create consumer wrapper for method \"%s\", as its declaring class is not public!"
+						"Cannot create a consumer wrapper for method \"%s\", as its declaring class is not public!"
 								.formatted(method));
 			}
 			if (method.getParameterTypes().length != 1) {
 				throw new IllegalArgumentException(
-						"Cannot create consumer wrapper for method \"%s\", as it doesn't have only one parameter!"
+						"Cannot create a consumer wrapper for method \"%s\", as it doesn't have only one parameter!"
 								.formatted(method));
 			}
 			if (!Modifier.isPublic(method.getModifiers())) {
 				throw new IllegalArgumentException(
-						"Cannot create consumer wrapper for method \"%s\", as it is not public!".formatted(method));
+						"Cannot create a consumer wrapper for method \"%s\", as it is not public!".formatted(method));
 			}
 			if (method.getReturnType() != void.class) {
 				throw new IllegalArgumentException(
-						"Cannot create consumer wrapper for method \"%s\", as its return type is not void!"
+						"Cannot create a consumer wrapper for method \"%s\", as its return type is not void!"
 								.formatted(method));
 			}
 			final var parameterType = method.getParameterTypes()[0];
@@ -161,7 +161,8 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 			MethodVisitor mv;
 
 			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "ConsumerWrapper"), ACC_PUBLIC | ACC_SUPER | ACC_FINAL,
-					generatedNameInternal, "Ljava/lang/Object;Ljava/util/function/Consumer<%s>;".formatted(inputDescriptor),
+					generatedNameInternal,
+					"Ljava/lang/Object;Ljava/util/function/Consumer<%s>;".formatted(inputDescriptor),
 					Descriptors.OBJECT_NAME, new String[] {
 							"java/util/function/Consumer"
 			});
@@ -266,7 +267,6 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 				final Consumer staticInvoker = LambdaUtils.rethrowSupplier(
 						() -> isStatic ? (Consumer) getGeneratedClass().getDeclaredConstructor().newInstance() : null)
 						.get();
-				// TODO replace with a (future) constructor wrapper
 				final ConstructorWrapper<?> constructorWrapper = isStatic ? null
 						: LambdaUtils.rethrowSupplier(
 								() -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
@@ -287,6 +287,11 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 						throw new UnsupportedOperationException(
 								"The method wrapped by this wrapper (\"%s\") is static! Use `accept` instead."
 										.formatted(method));
+					}
+					if (!owner.isAssignableFrom(target.getClass())) {
+						throw new ClassCastException(
+								"Object \"%s\" cannot be cast to the declaring class of the wrapped method \"%s\""
+										.formatted(target, owner));
 					}
 					return (Consumer<T>) constructorWrapper.invoke(target);
 				}
@@ -324,8 +329,11 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 	 * @param  target                        the target that the returned consumer
 	 *                                       accepts the wrapped method on
 	 * @return                               the consumer
-	 * @throws UnsupportedOperationException if the method wrapped by this wrapper,
+	 * @throws UnsupportedOperationException if the method wrapped by this wrapper
 	 *                                       is <strong>static</strong>
+	 * @throws ClassCastException            if the {@code target} cannot be cast to
+	 *                                       the declaring class of the wrapped
+	 *                                       method
 	 */
 	@NotNull
 	Consumer<T> onTarget(@NotNull Object target);
