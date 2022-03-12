@@ -47,6 +47,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import io.github.matyrobbrt.asmutils.ASMGeneratedType;
 import io.github.matyrobbrt.asmutils.ASMUtilsClassLoader;
+import io.github.matyrobbrt.asmutils.ClassNameGenerator;
 import io.github.matyrobbrt.asmutils.Descriptors;
 import io.github.matyrobbrt.asmutils.JavaGetter;
 import io.github.matyrobbrt.asmutils.LambdaUtils;
@@ -149,7 +150,8 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 			final var ownerDescriptor = Type.getDescriptor(owner);
 			final var ownerName = Type.getInternalName(owner);
 			final var generatedName = PrivateUtils.generateName(method);
-			final var generatedNameDescriptor = "L" + generatedName.replace('.', '/') + ";";
+			final var generatedNameInternal = generatedName.replace('.', '/');
+			final var generatedNameDescriptor = "L" + generatedNameInternal + ";";
 			final var consumerMethodDescriptor = "(%s)V".formatted(inputDescriptor);
 
 			PrivateUtils.LOGGER.debug("Generating ConsumerWrapper for method \"{}\"...", method);
@@ -159,7 +161,7 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 			MethodVisitor mv;
 
 			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "ConsumerWrapper"), ACC_PUBLIC | ACC_SUPER | ACC_FINAL,
-					generatedName, "Ljava/lang/Object;Ljava/util/function/Consumer<%s>;".formatted(inputDescriptor),
+					generatedNameInternal, "Ljava/lang/Object;Ljava/util/function/Consumer<%s>;".formatted(inputDescriptor),
 					Descriptors.OBJECT_NAME, new String[] {
 							"java/util/function/Consumer"
 			});
@@ -187,7 +189,7 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 					mv.visitLineNumber(10, l1);
 					mv.visitVarInsn(ALOAD, 0);
 					mv.visitVarInsn(ALOAD, 1);
-					mv.visitFieldInsn(PUTFIELD, generatedName, "instance", ownerDescriptor);
+					mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
 				}
 				Label l2 = new Label();
 				mv.visitLabel(l2);
@@ -224,7 +226,7 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 					mv.visitLabel(label0);
 					mv.visitLineNumber(15, label0);
 					mv.visitVarInsn(ALOAD, 0);
-					mv.visitFieldInsn(GETFIELD, generatedName, "instance", ownerDescriptor);
+					mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
 					mv.visitVarInsn(ALOAD, 1);
 					mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), Type.getMethodDescriptor(method),
 							false);
@@ -250,7 +252,7 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 				mv.visitVarInsn(ALOAD, 0);
 				mv.visitVarInsn(ALOAD, 1);
 				mv.visitTypeInsn(CHECKCAST, inputName);
-				mv.visitMethodInsn(INVOKEVIRTUAL, generatedName, "accept", consumerMethodDescriptor, false);
+				mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "accept", consumerMethodDescriptor, false);
 				mv.visitInsn(RETURN);
 				mv.visitMaxs(2, 2);
 				mv.visitEnd();
@@ -361,14 +363,14 @@ public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 		private static final AtomicInteger CREATED_WRAPPERS = new AtomicInteger();
 		private static String generateName(Method method) {
 			final var isStatic = Modifier.isStatic(method.getModifiers());
-			return "%s$%s_%s_%s$%s_%s".formatted(
+			return ClassNameGenerator.resolveOnBasePackage("%s$%s_%s_%s$%s_%s".formatted(
 					ConsumerWrapper.class.getSimpleName(),
 					CREATED_WRAPPERS.getAndIncrement(),
 					method.getDeclaringClass().getSimpleName(),
 					method.getName(),
 					isStatic ? 1 : 0,
 					method.getParameterTypes()[0].getSimpleName()
-			);
+			));
 		}
 	}
 }

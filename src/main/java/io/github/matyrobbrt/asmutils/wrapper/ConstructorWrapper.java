@@ -50,6 +50,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import io.github.matyrobbrt.asmutils.ASMGeneratedType;
 import io.github.matyrobbrt.asmutils.ASMUtilsClassLoader;
+import io.github.matyrobbrt.asmutils.ClassNameGenerator;
 import io.github.matyrobbrt.asmutils.Descriptors;
 import io.github.matyrobbrt.asmutils.JavaGetter;
 import io.github.matyrobbrt.asmutils.LambdaUtils;
@@ -135,7 +136,8 @@ public interface ConstructorWrapper<T> extends Wrapper, ConstructorInvoker<T> {
 			final var constructorDescriptor = Type.getConstructorDescriptor(constructor);
 			final var parameterTypes = constructor.getParameterTypes();
 			final var generatedName = PrivateUtils.generateName(constructor);
-			final var generatedNameDescriptor = "L" + generatedName.replace('.', '/') + ";";
+			final var generatedNameInternal = generatedName.replace('.', '/');
+			final var generatedNameDescriptor = "L" + generatedNameInternal + ";";
 			final var invokeMethodDescriptor = "([%s)%s".formatted(Descriptors.OBJECT_DESCRIPTOR, ownerDescriptor);
 
 			ClassWriter cw = new ClassWriter(0);
@@ -145,7 +147,7 @@ public interface ConstructorWrapper<T> extends Wrapper, ConstructorInvoker<T> {
 			PrivateUtils.LOGGER.debug("Generating ConstructorWrapper for constructor \"{}\"...", constructor);
 
 			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, ConstructorWrapper.class.getSimpleName()),
-					ACC_PUBLIC | ACC_SUPER | ACC_FINAL, generatedName,
+					ACC_PUBLIC | ACC_SUPER | ACC_FINAL, generatedNameInternal,
 					"%sL%s<%s>;".formatted(OBJECT_DESCRIPTOR, ownerDescriptor, ConstructorInvoker.INTERNAL_NAME),
 					OBJECT_NAME, new String[] {
 							ConstructorInvoker.INTERNAL_NAME
@@ -171,10 +173,10 @@ public interface ConstructorWrapper<T> extends Wrapper, ConstructorInvoker<T> {
 				Label label0 = new Label();
 				mv.visitLabel(label0);
 				mv.visitLineNumber(7, label0);
-				mv.visitTypeInsn(NEW, generatedName);
+				mv.visitTypeInsn(NEW, generatedNameInternal);
 				mv.visitInsn(DUP);
-				mv.visitMethodInsn(INVOKESPECIAL, generatedName, "<init>", "()V", false);
-				mv.visitFieldInsn(PUTSTATIC, generatedName, "INSTANCE", generatedNameDescriptor);
+				mv.visitMethodInsn(INVOKESPECIAL, generatedNameInternal, "<init>", "()V", false);
+				mv.visitFieldInsn(PUTSTATIC, generatedNameInternal, "INSTANCE", generatedNameDescriptor);
 				mv.visitInsn(RETURN);
 				mv.visitMaxs(2, 0);
 				mv.visitEnd();
@@ -241,7 +243,7 @@ public interface ConstructorWrapper<T> extends Wrapper, ConstructorInvoker<T> {
 				mv.visitLineNumber(1, label0);
 				mv.visitVarInsn(ALOAD, 0);
 				mv.visitVarInsn(ALOAD, 1);
-				mv.visitMethodInsn(INVOKEVIRTUAL, generatedName, "invoke", invokeMethodDescriptor, false);
+				mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "invoke", invokeMethodDescriptor, false);
 				mv.visitInsn(ARETURN);
 				mv.visitMaxs(2, 2);
 				mv.visitEnd();
@@ -306,12 +308,12 @@ public interface ConstructorWrapper<T> extends Wrapper, ConstructorInvoker<T> {
 		private static final Map<Constructor<?>, ConstructorWrapper<?>> CACHE = new HashMap<>();
 		private static final AtomicInteger CREATED_WRAPPERS = new AtomicInteger();
 		private static <T> String generateName(Constructor<T> ct) {
-			return "%s$%s_%s_%s".formatted(
+			return ClassNameGenerator.resolveOnBasePackage("a.%s$%s_%s_%s".formatted(
 					ConstructorWrapper.class.getSimpleName(),
 					CREATED_WRAPPERS.getAndIncrement(),
 					ct.getDeclaringClass().getSimpleName(),
 					genParameterNames(ct)
-			);
+			));
 		}
 		private static <T> String genParameterNames(Constructor<T> ct) {
 			final var parametersLength = ct.getParameterTypes().length;
