@@ -6,7 +6,6 @@ dist: trusty
 jdk: oraclejdk17
 
 script:
-  - chmod +x ./gradlew build
   - ./gradlew build
 
 before_cache:
