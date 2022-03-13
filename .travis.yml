@@ -6,7 +6,8 @@ dist: trusty
 jdk: oraclejdk17
 
 script:
-  - chmod +x gradlew build
+  - chmod +x ./gradlew build
+  - ./gradlew build
 
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
