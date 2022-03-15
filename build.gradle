@@ -154,15 +154,24 @@ allprojects {
 }
 
 String resolveCommitMessage(String commitRef) {
-    final var http = HttpClient.newBuilder().build();
-    final var req = HttpRequest
-            .newBuilder(new URI("https://api.github.com/repos/Matyrobbrt/ASMUtils/commits/${commitRef}"))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "token " + properties.get("githubToken") as String)
-            .GET()
-            .build();
-    final var response = new Gson().fromJson(http.send(req, HttpResponse.BodyHandlers.ofString()).body(), JsonObject.class);
-    return response.getAsJsonObject("commit").get("message").getAsString();
+    try (final var con = (HttpURLConnection) new URL("https://api.github.com/repos/Matyrobbrt/ASMUtils/commits/${commitRef}").openConnection()) {
+        con.setDoOutput(true);
+        con.setRequestMethod("GET");
+        con.addRequestProperty("Content-Type", "application/json")
+        con.addRequestProperty("Authorization", "token " + properties.get("githubToken") as String)
+
+        final var reader = new BufferedReader(
+                new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuffer ct = new StringBuffer();
+        while ((inputLine = reader.readLine()) != null) {
+            ct.append(inputLine);
+        }
+        reader.close();
+
+        final var response = new Gson().fromJson(ct.toString(), JsonObject.class);
+        return response.getAsJsonObject("commit").get("message").getAsString();
+    }
 }
 
 String getVersion(String nothing) {
