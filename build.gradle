@@ -154,7 +154,7 @@ allprojects {
 }
 
 String resolveCommitMessage(String commitRef) {
-    final var con = (HttpURLConnection) new URL("https://api.github.com/repos/Matyrobbrt/ASMUtils/commits/${commitRef}").openConnection()
+    final var con = (HttpURLConnection) new URL("http://api.github.com/repos/Matyrobbrt/ASMUtils/commits/${commitRef}").openConnection()
     con.setDoOutput(true);
     con.setRequestMethod("GET");
     con.addRequestProperty("Content-Type", "application/json")
