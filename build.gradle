@@ -1,3 +1,6 @@
+import com.matyrobbrt.asmutilsgradlehelper.ASMUtilsGradleHelper
+import com.matyrobbrt.asmutilsgradlehelper.ASMUtilsGradleHelper.IncreaseType
+
 buildscript {
     repositories {
         mavenCentral()
@@ -14,9 +17,19 @@ plugins {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-group = "io.github.matyrobbrt"
+group = "io.github.matyrobbrt" // TODO maybe in a future version, it could be moved to `com.matyrobbrt`
 archivesBaseName = "asmutils"
-version = "${version}"
+version = getVersion("")
+def commitMessage = getCommitMessage()
+
+String getCommitMessage() {
+    if (properties.containsKey("commitMessage")) {
+        return properties.get("commitMessage") as String
+    } else if (properties.containsKey("githubToken") && properties.containsKey("commitRef")) {
+        return ASMUtilsGradleHelper.resolveCommitMessage(properties.get("commitRef") as String, properties.get("githubToken") as String)
+    }
+    return null;
+}
 
 repositories {
     jcenter()
@@ -25,23 +38,22 @@ repositories {
 
 def asmVersion = '9.2'
 def libraries = [
-	"org.ow2.asm:asm": asmVersion,	
-	"org.ow2.asm:asm-commons": asmVersion,	
-	"org.ow2.asm:asm-tree": asmVersion,
-	
-	"org.slf4j:slf4j-api": '1.7.36'
+        "org.ow2.asm:asm"        : asmVersion,
+        "org.ow2.asm:asm-commons": asmVersion,
+        "org.ow2.asm:asm-tree"   : asmVersion,
+
+        "org.slf4j:slf4j-api"    : '1.7.36'
 ]
 
 dependencies {
-	libraries.each { entry ->
-		implementation("$entry.key:$entry.value")
-	}
-	compileOnly group: 'org.jetbrains', name: 'annotations', version: '23.0.0'
-	
-	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.36'
-	testImplementation group: 'io.github.cdimascio', name: 'dotenv-java', version: '2.2.3'
-	testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.22.0'
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.8.2'
+    libraries.each {
+        entry -> implementation("$entry.key:$entry.value")
+    }
+    compileOnly group: 'org.jetbrains', name: 'annotations', version: '23.0.0'
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.36'
+    testImplementation group: 'io.github.cdimascio', name: 'dotenv-java', version: '2.2.3'
+    testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.22.0'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.8.2'
 }
 
 license {
@@ -59,18 +71,17 @@ java {
     withSourcesJar()
 }
 
-// TODO fix maven names and stuff
 allprojects {
     compileJava {
-        options.release = 17
+        options.release.set(17)
     }
     javadoc.options.addStringOption('Xdoclint:none', '-quiet')
-    
+
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
     apply plugin: 'io.codearte.nexus-staging'
     publishing {
-        publications{
+        publications {
             mavenJava(MavenPublication) {
                 from components.java
                 pom {
@@ -80,7 +91,7 @@ allprojects {
                     licenses {
                         license {
                             name = 'MIT License'
-                            url = 'http://www.opensource.org/licenses/mit-license.php'
+                            url = 'https://www.opensource.org/licenses/mit-license.php'
                         }
                     }
                     developers {
@@ -101,12 +112,10 @@ allprojects {
         repositories {
             maven {
                 name = "OSSRH"
-                url = project.hasProperty("snapshot") ?
-                        "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-                        : "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                url = project.hasProperty("snapshot") ? "https://s01.oss.sonatype.org/content/repositories/snapshots/" : "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
                 credentials {
-                    username = ossrhUser
-                    password = ossrhPassword
+                    username = findProperty("ossrhUser") ? ossrhUser : ""
+                    password = findProperty("ossrhPassword") ? ossrhPassword : ""
                 }
             }
         }
@@ -116,8 +125,15 @@ allprojects {
     }
     nexusStaging {
         serverUrl = "https://s01.oss.sonatype.org/service/local/"
-        username = ossrhUser
-        password = ossrhPassword
+        username = findProperty("ossrhUser") ? ossrhUser : ""
+        password = findProperty("ossrhPassword") ? ossrhPassword : ""
+    }
+    final var cmtMsg = commitMessage == null ? null : commitMessage.toLowerCase(Locale.ROOT)
+    tasks.create("tryBuildAndPublish")
+	tasks.tryBuildAndPublish.finalizedBy build
+    if (project.hasProperty("publish") || (project.hasProperty("mayPublish") && (properties.get("prNumber") == null || properties.get("prNumber") == "%teamcity.pullRequest.number%") // if it isn't a PR, teamcity doesn't replace the arg
+            && cmtMsg != null && (cmtMsg.contains("[publish]") || cmtMsg.contains("[pb]")))) {
+        tasks.build.finalizedBy publish
     }
     if (project.hasProperty("close")) {
         tasks.publish.finalizedBy closeAndReleaseRepository
@@ -131,6 +147,15 @@ allprojects {
     sourcesJar {
         destinationDirectory = file("./build/libs/${version}/")
     }
+}
+
+String getVersion(String nothing) {
+    if ((properties.get("version") as String) != "unspecified") {
+        return (properties.get("version") as String)
+    } else if (commitMessage != null) {
+        return ASMUtilsGradleHelper.resolveVersionFromCommitMessage(commitMessage)
+    }
+    return ASMUtilsGradleHelper.getNextVersionFromMavenInfo(IncreaseType.MINOR)
 }
 
 compileJava.options.encoding = "UTF-8"
