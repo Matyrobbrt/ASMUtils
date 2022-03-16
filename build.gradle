@@ -1,35 +1,11 @@
-import com.google.gson.Gson
 import com.matyrobbrt.asmutilsgradlehelper.ASMUtilsGradleHelper
-import org.w3c.dom.Element
-import com.google.gson.JsonObject;
-import com.matyrobbrt.*;
-import com.google.*;
-import org.w3c.dom.Node
-import org.xml.sax.ContentHandler
-import org.xml.sax.DTDHandler
-import org.xml.sax.EntityResolver
-import org.xml.sax.ErrorHandler
-import org.xml.sax.InputSource
-import org.xml.sax.SAXException
-import org.xml.sax.SAXNotRecognizedException
-import org.xml.sax.SAXNotSupportedException
-import org.xml.sax.XMLReader
-
-import javax.xml.XMLConstants
-import javax.xml.parsers.DocumentBuilderFactory
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.util.regex.Pattern
+import com.matyrobbrt.asmutilsgradlehelper.ASMUtilsGradleHelper.IncreaseType
 
 buildscript {
     repositories {
         mavenCentral()
     }
     dependencies {
-        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.30.0"
-        classpath 'com.google.code.gson:gson:2.9.0'
-        classpath 'com.google.http-client:google-http-client:1.41.4'
     }
 }
 plugins {
@@ -40,12 +16,11 @@ plugins {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-group = "io.github.matyrobbrt"
+group = "io.github.matyrobbrt" // TODO maybe in a future version, it could be moved to `com.matyrobbrt`
 archivesBaseName = "asmutils"
 version = getVersion("")
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
@@ -86,7 +61,7 @@ java {
 
 allprojects {
     compileJava {
-        options.release = 17
+        options.release.set(17)
     }
     javadoc.options.addStringOption('Xdoclint:none', '-quiet')
 
@@ -104,7 +79,7 @@ allprojects {
                     licenses {
                         license {
                             name = 'MIT License'
-                            url = 'http://www.opensource.org/licenses/mit-license.php'
+                            url = 'https://www.opensource.org/licenses/mit-license.php'
                         }
                     }
                     developers {
@@ -159,74 +134,14 @@ allprojects {
 
 String getVersion(String nothing) {
     if (properties.containsKey("githubToken") && properties.containsKey("commitRef")) {
-        return resolveVersionFromCommitMessage(ASMUtilsGradleHelper.resolveCommitMessage(properties.get("commitRef") as String, properties.get("githubToken") as String))
+        return ASMUtilsGradleHelper.resolveVersionFromCommitMessage(ASMUtilsGradleHelper.resolveCommitMessage(properties.get("commitRef") as String, properties.get("githubToken") as String))
     }
     if ((properties.get("version") as String) != "unspecified") {
         return (properties.get("version") as String)
     } else if (properties.containsKey("commitMessage")) {
-        return resolveVersionFromCommitMessage(properties.get("commitMessage") as String)
+        return ASMUtilsGradleHelper.resolveVersionFromCommitMessage(properties.get("commitMessage") as String)
     }
-    return getNextVersionFromMavenInfo(IncreaseType.MINOR)
-}
-
-String resolveVersionFromCommitMessage(String cmtMessage) {
-    var commitMessage = cmtMessage.toLowerCase(Locale.ROOT)
-    final var startIndex = commitMessage.indexOf("[v")
-    if (startIndex != -1) {
-        commitMessage = commitMessage.substring(startIndex + 2)
-        final var endIndex = commitMessage.indexOf(']');
-        if (endIndex != -1) {
-            var version = commitMessage.substring(0, endIndex)
-            switch (version.toLowerCase(Locale.ROOT)) {
-                case "major": version = getNextVersionFromMavenInfo(IncreaseType.MAJOR)
-                    break
-                case "minor": version = getNextVersionFromMavenInfo(IncreaseType.MINOR)
-                    break
-                case "bug": version = getNextVersionFromMavenInfo(IncreaseType.BUG)
-            }
-            return version;
-        }
-    }
-    return getNextVersionFromMavenInfo(IncreaseType.MINOR)
-}
-
-String getNextVersionFromMavenInfo(final IncreaseType increaseType) {
-    final var parser = DocumentBuilderFactory.newInstance();
-    parser.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-
-    final var builder = parser.newDocumentBuilder();
-    try (final var is = new URL("https://repo1.maven.org/maven2/io/github/matyrobbrt/asmutils/maven-metadata.xml").openStream()) {
-        final var xml = builder.parse(is);
-        xml.getDocumentElement().normalize()
-        String latestVersion = (((xml.getElementsByTagName("metadata").item(0) as Element)
-                .getElementsByTagName("versioning").item(0) as Element)
-                .getElementsByTagName("latest").item(0) as Element).getTextContent();
-        var major = Integer.parseInt(latestVersion.substring(0, latestVersion.indexOf(".")))
-        latestVersion = latestVersion.substring(latestVersion.indexOf(".") + 1)
-        var minor = Integer.parseInt(latestVersion.substring(0, latestVersion.indexOf(".")))
-        latestVersion = latestVersion.substring(latestVersion.indexOf("."))
-        var bug = Integer.parseInt(latestVersion.substring(1))
-        switch (increaseType) {
-            case IncreaseType.MAJOR: {
-                major++
-                minor = 0
-                bug = 0
-            }
-                break
-            case IncreaseType.MINOR: {
-                minor++
-                bug = 0
-            }
-                break
-            case IncreaseType.BUG: bug++
-                break
-        }
-        return "$major.$minor.$bug"
-    }
-}
-
-enum IncreaseType {
-    MAJOR, MINOR, BUG;
+    return ASMUtilsGradleHelper.getNextVersionFromMavenInfo(IncreaseType.MINOR)
 }
 
 compileJava.options.encoding = "UTF-8"
