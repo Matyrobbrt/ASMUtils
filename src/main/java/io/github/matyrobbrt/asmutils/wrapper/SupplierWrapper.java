@@ -98,6 +98,15 @@ public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 	 */
 	Type TYPE = Type.getType(SupplierWrapper.class);
 
+	/**
+	 * Creates a supplier wrapper for the field.
+	 * 
+	 * @param  <T>                      the type of the field
+	 * @param  field                    the field to wrap
+	 * @return                          the wrapper
+	 * @throws IllegalArgumentException if the field is not public, or its declaring
+	 *                                  class is not public
+	 */
 	@SuppressWarnings("unchecked")
 	static <T> SupplierWrapper<T> wrapField(final Field field) {
 		return (SupplierWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(field, $ -> {
@@ -123,96 +132,96 @@ public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 
 			PrivateUtils.LOGGER.debug("Generating SupplierWrapper for field \"{}\"...", field);
 
-			ClassWriter classWriter = new ClassWriter(0);
-			FieldVisitor fieldVisitor;
-			MethodVisitor methodVisitor;
+			ClassWriter cw = new ClassWriter(0);
+			FieldVisitor fv;
+			MethodVisitor mv;
 
-			classWriter.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"),
+			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"),
 					ACC_PUBLIC | ACC_FINAL | ACC_SUPER, generatedNameInternal,
 					"%sL%s<%s>;".formatted(OBJECT_DESCRIPTOR, SUPPLIER_NAME, fieldDescriptor), OBJECT_NAME,
 					new String[] {
 							SUPPLIER_NAME
 			});
 
-			classWriter.visitSource(".dynamic", null);
-			ASMGeneratedType.ANNOTATION_ADDER.accept(classWriter, TYPE);
+			cw.visitSource(".dynamic", null);
+			ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
 
 			if (!isStatic) {
-				fieldVisitor = classWriter.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
-				fieldVisitor.visitEnd();
+				fv = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
+				fv.visitEnd();
 			}
 
 			{
-				methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "<init>",
+				mv = cw.visitMethod(ACC_PUBLIC, "<init>",
 						"(%s)V".formatted(isStatic ? "" : ownerDescriptor), null, null);
-				methodVisitor.visitCode();
+				mv.visitCode();
 				Label label0 = new Label();
-				methodVisitor.visitLabel(label0);
-				methodVisitor.visitLineNumber(isStatic ? 5 : 9, label0);
-				methodVisitor.visitVarInsn(ALOAD, 0);
-				methodVisitor.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
+				mv.visitLabel(label0);
+				mv.visitLineNumber(isStatic ? 5 : 9, label0);
+				mv.visitVarInsn(ALOAD, 0);
+				mv.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
 				if (isStatic) {
-					methodVisitor.visitInsn(RETURN);
+					mv.visitInsn(RETURN);
 					Label label1 = new Label();
-					methodVisitor.visitLabel(label1);
-					methodVisitor.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+					mv.visitLabel(label1);
+					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
 				} else {
 					Label label1 = new Label();
-					methodVisitor.visitLabel(label1);
-					methodVisitor.visitLineNumber(10, label1);
-					methodVisitor.visitVarInsn(ALOAD, 0);
-					methodVisitor.visitVarInsn(ALOAD, 1);
-					methodVisitor.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
+					mv.visitLabel(label1);
+					mv.visitLineNumber(10, label1);
+					mv.visitVarInsn(ALOAD, 0);
+					mv.visitVarInsn(ALOAD, 1);
+					mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
 					Label label2 = new Label();
-					methodVisitor.visitLabel(label2);
-					methodVisitor.visitLineNumber(11, label2);
-					methodVisitor.visitInsn(RETURN);
+					mv.visitLabel(label2);
+					mv.visitLineNumber(11, label2);
+					mv.visitInsn(RETURN);
 					Label label3 = new Label();
-					methodVisitor.visitLabel(label3);
-					methodVisitor.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
-					methodVisitor.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
+					mv.visitLabel(label3);
+					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
+					mv.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
 				}
-				methodVisitor.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
-				methodVisitor.visitEnd();
+				mv.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
+				mv.visitEnd();
 			}
 			{
-				methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
-				methodVisitor.visitCode();
+				mv = cw.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
+				mv.visitCode();
 				Label label0 = new Label();
 				Label label1 = new Label();
-				methodVisitor.visitLabel(label0);
-				methodVisitor.visitLineNumber(isStatic ? 9 : 15, label0);
+				mv.visitLabel(label0);
+				mv.visitLineNumber(isStatic ? 9 : 15, label0);
 				if (isStatic) {
-					methodVisitor.visitLineNumber(9, label0);
-					methodVisitor.visitFieldInsn(GETSTATIC, ownerName, field.getName(), fieldDescriptor);
-					methodVisitor.visitInsn(ARETURN);
-					methodVisitor.visitLabel(label1);
+					mv.visitLineNumber(9, label0);
+					mv.visitFieldInsn(GETSTATIC, ownerName, field.getName(), fieldDescriptor);
+					mv.visitInsn(ARETURN);
+					mv.visitLabel(label1);
 				} else {
-					methodVisitor.visitVarInsn(ALOAD, 0);
-					methodVisitor.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
-					methodVisitor.visitFieldInsn(GETFIELD, ownerName, field.getName(), fieldDescriptor);
-					methodVisitor.visitInsn(ARETURN);
-					methodVisitor.visitLabel(label1);
+					mv.visitVarInsn(ALOAD, 0);
+					mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
+					mv.visitFieldInsn(GETFIELD, ownerName, field.getName(), fieldDescriptor);
+					mv.visitInsn(ARETURN);
+					mv.visitLabel(label1);
 				}
-				methodVisitor.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
-				methodVisitor.visitMaxs(1, 1);
-				methodVisitor.visitEnd();
+				mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+				mv.visitMaxs(1, 1);
+				mv.visitEnd();
 			}
 			{
-				methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get",
+				mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get",
 						"()Ljava/lang/Object;", null, null);
-				methodVisitor.visitCode();
+				mv.visitCode();
 				Label label0 = new Label();
-				methodVisitor.visitLabel(label0);
-				methodVisitor.visitLineNumber(1, label0);
-				methodVisitor.visitVarInsn(ALOAD, 0);
-				methodVisitor.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
-				methodVisitor.visitInsn(ARETURN);
-				methodVisitor.visitMaxs(1, 1);
-				methodVisitor.visitEnd();
+				mv.visitLabel(label0);
+				mv.visitLineNumber(1, label0);
+				mv.visitVarInsn(ALOAD, 0);
+				mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
+				mv.visitInsn(ARETURN);
+				mv.visitMaxs(1, 1);
+				mv.visitEnd();
 			}
-			classWriter.visitEnd();
-			final var bytes = classWriter.toByteArray();
+			cw.visitEnd();
+			final var bytes = cw.toByteArray();
 			PrivateUtils.LOGGER.debug("Finished generating SupplierWrapper for field \"{}\"", field);
 			return new SupplierWrapper<T>() {
 
@@ -279,6 +288,23 @@ public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 		});
 	}
 
+	/**
+	 * Creates a {@link SupplierWrapper} for a method.
+	 * 
+	 * @param  <T>                      the return type of the method
+	 * @param  method                   the method to wrap
+	 * @return                          the wrapper
+	 * @throws IllegalArgumentException if the wrapped method meets one of the
+	 *                                  following conditions:
+	 *                                  <ul>
+	 *                                  <li>the method is not public</li>
+	 *                                  <li>the declaring class of the method is not
+	 *                                  public</li>
+	 *                                  <li>the method returns void (doesn't have a
+	 *                                  return type)</li>
+	 *                                  <li>the method has parameters</i>
+	 *                                  </ul>
+	 */
 	@SuppressWarnings("unchecked")
 	static <T> SupplierWrapper<T> wrapMethod(final Method method) {
 		return (SupplierWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(method, $ -> {
@@ -313,97 +339,97 @@ public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 
 			PrivateUtils.LOGGER.debug("Generating SupplierWrapper for method \"{}\"...", method);
 
-			ClassWriter classWriter = new ClassWriter(0);
-			FieldVisitor fieldVisitor;
-			MethodVisitor methodVisitor;
+			ClassWriter cw = new ClassWriter(0);
+			FieldVisitor fv;
+			MethodVisitor mv;
 
-			classWriter.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"),
+			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"),
 					ACC_PUBLIC | ACC_SUPER | ACC_FINAL, generatedNameInternal,
 					"Ljava/lang/Object;L%s<%s>;".formatted(SUPPLIER_NAME, returnDescriptor), OBJECT_NAME, new String[] {
 							SUPPLIER_NAME
 			});
 
-			classWriter.visitSource(".dynamic", null);
+			cw.visitSource(".dynamic", null);
 
-			ASMGeneratedType.ANNOTATION_ADDER.accept(classWriter, TYPE);
+			ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
 
 			if (!isStatic) {
-				fieldVisitor = classWriter.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
-				fieldVisitor.visitEnd();
+				fv = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
+				fv.visitEnd();
 			}
 
 			{
-				methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "<init>",
+				mv = cw.visitMethod(ACC_PUBLIC, "<init>",
 						"(%s)V".formatted(isStatic ? "" : ownerDescriptor), null, null);
-				methodVisitor.visitCode();
+				mv.visitCode();
 				Label label0 = new Label();
-				methodVisitor.visitLabel(label0);
-				methodVisitor.visitLineNumber(isStatic ? 3 : 7, label0);
-				methodVisitor.visitVarInsn(ALOAD, 0);
-				methodVisitor.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
+				mv.visitLabel(label0);
+				mv.visitLineNumber(isStatic ? 3 : 7, label0);
+				mv.visitVarInsn(ALOAD, 0);
+				mv.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
 				if (isStatic) {
-					methodVisitor.visitInsn(RETURN);
+					mv.visitInsn(RETURN);
 					Label label1 = new Label();
-					methodVisitor.visitLabel(label1);
-					methodVisitor.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+					mv.visitLabel(label1);
+					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
 				} else {
 					Label label1 = new Label();
-					methodVisitor.visitLabel(label1);
-					methodVisitor.visitLineNumber(8, label1);
-					methodVisitor.visitVarInsn(ALOAD, 0);
-					methodVisitor.visitVarInsn(ALOAD, 1);
-					methodVisitor.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
+					mv.visitLabel(label1);
+					mv.visitLineNumber(8, label1);
+					mv.visitVarInsn(ALOAD, 0);
+					mv.visitVarInsn(ALOAD, 1);
+					mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
 					Label label2 = new Label();
-					methodVisitor.visitLabel(label2);
-					methodVisitor.visitLineNumber(9, label2);
-					methodVisitor.visitInsn(RETURN);
+					mv.visitLabel(label2);
+					mv.visitLineNumber(9, label2);
+					mv.visitInsn(RETURN);
 					Label label3 = new Label();
-					methodVisitor.visitLabel(label3);
-					methodVisitor.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
-					methodVisitor.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
+					mv.visitLabel(label3);
+					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
+					mv.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
 				}
-				methodVisitor.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
-				methodVisitor.visitEnd();
+				mv.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
+				mv.visitEnd();
 			}
 			{
-				methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
-				methodVisitor.visitCode();
+				mv = cw.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
+				mv.visitCode();
 				Label label0 = new Label();
-				methodVisitor.visitLabel(label0);
-				methodVisitor.visitLineNumber(isStatic ? 7 : 13, label0);
+				mv.visitLabel(label0);
+				mv.visitLineNumber(isStatic ? 7 : 13, label0);
 
 				if (isStatic) {
-					methodVisitor.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(),
+					mv.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(),
 							Type.getMethodDescriptor(method), false);
 				} else {
-					methodVisitor.visitVarInsn(ALOAD, 0);
-					methodVisitor.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
-					methodVisitor.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), getMethodDescriptor,
+					mv.visitVarInsn(ALOAD, 0);
+					mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
+					mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), getMethodDescriptor,
 							false);
 				}
-				methodVisitor.visitInsn(ARETURN);
+				mv.visitInsn(ARETURN);
 				Label label1 = new Label();
-				methodVisitor.visitLabel(label1);
-				methodVisitor.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
-				methodVisitor.visitMaxs(isStatic ? 1 : 2, 1);
-				methodVisitor.visitEnd();
+				mv.visitLabel(label1);
+				mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+				mv.visitMaxs(isStatic ? 1 : 2, 1);
+				mv.visitEnd();
 			}
 			{
 				// Generate the synthetic `get`
-				methodVisitor = classWriter.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get",
+				mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get",
 						"()%s".formatted(OBJECT_DESCRIPTOR), null, null);
-				methodVisitor.visitCode();
+				mv.visitCode();
 				Label label0 = new Label();
-				methodVisitor.visitLabel(label0);
-				methodVisitor.visitLineNumber(1, label0);
-				methodVisitor.visitVarInsn(ALOAD, 0);
-				methodVisitor.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
-				methodVisitor.visitInsn(ARETURN);
-				methodVisitor.visitMaxs(1, 1);
-				methodVisitor.visitEnd();
+				mv.visitLabel(label0);
+				mv.visitLineNumber(1, label0);
+				mv.visitVarInsn(ALOAD, 0);
+				mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
+				mv.visitInsn(ARETURN);
+				mv.visitMaxs(1, 1);
+				mv.visitEnd();
 			}
-			classWriter.visitEnd();
-			final var bytes = classWriter.toByteArray();
+			cw.visitEnd();
+			final var bytes = cw.toByteArray();
 			PrivateUtils.LOGGER.debug("Finished generating SupplierWrapper for method \"{}\"", method);
 			return new SupplierWrapper<T>() {
 

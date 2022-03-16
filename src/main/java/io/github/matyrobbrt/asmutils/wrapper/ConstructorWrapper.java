@@ -110,7 +110,7 @@ public interface ConstructorWrapper<T> extends Wrapper, ConstructorInvoker<T> {
 	 *                                  wrapped constructor)
 	 * @param  constructor              the constructor to wrap
 	 * @return                          the wrapper
-	 * @throws IllegalArgumentException if the wrapped method meets one of the
+	 * @throws IllegalArgumentException if the wrapped constructor meets one of the
 	 *                                  following conditions:
 	 *                                  <ul>
 	 *                                  <li>the constructor is not public</li>
