@@ -21,6 +21,7 @@ archivesBaseName = "asmutils"
 version = getVersion("")
 
 repositories {
+    jcenter()
     mavenCentral()
 }
 
