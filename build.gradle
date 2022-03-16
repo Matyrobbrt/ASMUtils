@@ -20,6 +20,16 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 group = "io.github.matyrobbrt" // TODO maybe in a future version, it could be moved to `com.matyrobbrt`
 archivesBaseName = "asmutils"
 version = getVersion("")
+def commitMessage = getCommitMessage()
+
+String getCommitMessage() {
+    if (properties.containsKey("commitMessage")) {
+        return properties.get("commitMessage") as String
+    } else if (properties.containsKey("githubToken") && properties.containsKey("commitRef")) {
+        return ASMUtilsGradleHelper.resolveCommitMessage(properties.get("commitRef") as String, properties.get("githubToken") as String)
+    }
+    return null;
+}
 
 repositories {
     jcenter()
@@ -120,6 +130,10 @@ allprojects {
         username = findProperty("ossrhUser") ? ossrhUser : ""
         password = findProperty("ossrhPassword") ? ossrhPassword : ""
     }
+    tasks.create("tryPublish")
+    if (project.hasProperty("publish") && (commitMessage == null || !commitMessage.toLowerCase(Locale.ROOT).contains("[no publish]"))) {
+        tasks.tryRun.finalizedBy publish
+    }
     if (project.hasProperty("close")) {
         tasks.publish.finalizedBy closeAndReleaseRepository
     }
@@ -134,14 +148,15 @@ allprojects {
     }
 }
 
+println("""
+   PR Number: ${properties.get("prNumber")}
+""")
+
 String getVersion(String nothing) {
-    if (properties.containsKey("githubToken") && properties.containsKey("commitRef")) {
-        return ASMUtilsGradleHelper.resolveVersionFromCommitMessage(ASMUtilsGradleHelper.resolveCommitMessage(properties.get("commitRef") as String, properties.get("githubToken") as String))
-    }
     if ((properties.get("version") as String) != "unspecified") {
         return (properties.get("version") as String)
-    } else if (properties.containsKey("commitMessage")) {
-        return ASMUtilsGradleHelper.resolveVersionFromCommitMessage(properties.get("commitMessage") as String)
+    } else if (commitMessage != null) {
+        return ASMUtilsGradleHelper.resolveVersionFromCommitMessage(commitMessage)
     }
     return ASMUtilsGradleHelper.getNextVersionFromMavenInfo(IncreaseType.MINOR)
 }
