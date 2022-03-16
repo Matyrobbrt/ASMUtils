@@ -130,9 +130,10 @@ allprojects {
         username = findProperty("ossrhUser") ? ossrhUser : ""
         password = findProperty("ossrhPassword") ? ossrhPassword : ""
     }
-    tasks.create("tryPublish")
+    tasks.create("tryBuildAndPublish")
     if (project.hasProperty("publish") && (commitMessage == null || !commitMessage.toLowerCase(Locale.ROOT).contains("[no publish]"))) {
-        tasks.tryRun.finalizedBy publish
+        tasks.tryBuildAndPublish.finalizedBy build
+        tasks.build.finalizedBy publish
     }
     if (project.hasProperty("close")) {
         tasks.publish.finalizedBy closeAndReleaseRepository
