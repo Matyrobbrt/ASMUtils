@@ -6,5 +6,5 @@ bin/
 .env
 build/
 .idea/
-buildSrc/.gradle
+buildSrc/.gradle/
 buildSrc/build/
