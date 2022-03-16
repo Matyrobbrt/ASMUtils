@@ -130,9 +130,9 @@ allprojects {
     }
     final var cmtMsg = commitMessage == null ? null : commitMessage.toLowerCase(Locale.ROOT)
     tasks.create("tryBuildAndPublish")
+	tasks.tryBuildAndPublish.finalizedBy build
     if (project.hasProperty("publish") || (project.hasProperty("mayPublish") && (properties.get("prNumber") == null || properties.get("prNumber") == "%teamcity.pullRequest.number%") // if it isn't a PR, teamcity doesn't replace the arg
             && cmtMsg != null && (cmtMsg.contains("[publish]") || cmtMsg.contains("[pb]")))) {
-        tasks.tryBuildAndPublish.finalizedBy build
         tasks.build.finalizedBy publish
     }
     if (project.hasProperty("close")) {
