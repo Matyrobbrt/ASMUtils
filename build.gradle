@@ -1,6 +1,9 @@
 import com.google.gson.Gson
+import com.matyrobbrt.asmutilsgradlehelper.ASMUtilsGradleHelper
 import org.w3c.dom.Element
 import com.google.gson.JsonObject;
+import com.matyrobbrt.*;
+import com.google.*;
 import org.w3c.dom.Node
 import org.xml.sax.ContentHandler
 import org.xml.sax.DTDHandler
@@ -26,6 +29,7 @@ buildscript {
     dependencies {
         classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.30.0"
         classpath 'com.google.code.gson:gson:2.9.0'
+        classpath 'com.google.http-client:google-http-client:1.41.4'
     }
 }
 plugins {
@@ -153,30 +157,9 @@ allprojects {
     }
 }
 
-String resolveCommitMessage(String commitRef) {
-    final var con = (HttpURLConnection) new URL("http://api.github.com/repos/Matyrobbrt/ASMUtils/commits/${commitRef}").openConnection()
-    con.setDoOutput(true);
-    con.setRequestMethod("GET");
-    con.addRequestProperty("Content-Type", "application/json")
-    con.addRequestProperty("Authorization", "token " + properties.get("githubToken") as String)
-
-    final var reader = new BufferedReader(
-            new InputStreamReader(con.getInputStream()));
-    String inputLine;
-    StringBuffer ct = new StringBuffer();
-    while ((inputLine = reader.readLine()) != null) {
-        ct.append(inputLine);
-    }
-    reader.close();
-    con.disconnect();
-
-    final var response = new Gson().fromJson(ct.toString(), JsonObject.class);
-    return response.getAsJsonObject("commit").get("message").getAsString();
-}
-
 String getVersion(String nothing) {
     if (properties.containsKey("githubToken") && properties.containsKey("commitRef")) {
-        return resolveVersionFromCommitMessage(resolveCommitMessage(properties.get("commitRef") as String))
+        return resolveVersionFromCommitMessage(ASMUtilsGradleHelper.resolveCommitMessage(properties.get("commitRef") as String, properties.get("githubToken") as String))
     }
     if ((properties.get("version") as String) != "unspecified") {
         return (properties.get("version") as String)
