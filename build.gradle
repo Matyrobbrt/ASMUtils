@@ -131,7 +131,8 @@ allprojects {
         password = findProperty("ossrhPassword") ? ossrhPassword : ""
     }
     tasks.create("tryBuildAndPublish")
-    if (project.hasProperty("publish") && (commitMessage == null || !commitMessage.toLowerCase(Locale.ROOT).contains("[no publish]"))) {
+    if (project.hasProperty("publish") && properties.get("prNumber") == "%teamcity.pullRequest.number%" // if it isn't a PR, teamcity doesn't replace the arg
+            && (commitMessage == null || !commitMessage.toLowerCase(Locale.ROOT).contains("[no publish]"))) {
         tasks.tryBuildAndPublish.finalizedBy build
         tasks.build.finalizedBy publish
     }
@@ -148,10 +149,6 @@ allprojects {
         destinationDirectory = file("./build/libs/${version}/")
     }
 }
-
-println("""
-   PR Number: ${properties.get("prNumber")}
-""")
 
 String getVersion(String nothing) {
     if ((properties.get("version") as String) != "unspecified") {
