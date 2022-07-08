@@ -93,462 +93,457 @@ import io.github.matyrobbrt.asmutils.LambdaUtils;
  */
 public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 
-	/**
-	 * The type of {@link SupplierWrapper}.
-	 */
-	Type TYPE = Type.getType(SupplierWrapper.class);
+    /**
+     * The type of {@link SupplierWrapper}.
+     */
+    Type TYPE = Type.getType(SupplierWrapper.class);
 
-	/**
-	 * Creates a supplier wrapper for the field.
-	 * 
-	 * @param  <T>                      the type of the field
-	 * @param  field                    the field to wrap
-	 * @return                          the wrapper
-	 * @throws IllegalArgumentException if the field is not public, or its declaring
-	 *                                  class is not public
-	 */
-	@SuppressWarnings("unchecked")
-	static <T> SupplierWrapper<T> wrapField(final Field field) {
-		return (SupplierWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(field, $ -> {
-			final var isStatic = Modifier.isStatic(field.getModifiers());
-			if (!Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
-				throw new IllegalArgumentException(
-						"Cannot create a supplier wrapper for field \"%s\", as its declaring class is not public!"
-								.formatted(field));
-			}
-			if (!Modifier.isPublic(field.getModifiers())) {
-				throw new IllegalArgumentException(
-						"Cannot create a supplier wrapper for field \"%s\", as it is not public!".formatted(field));
-			}
-			final var fieldType = field.getType();
-			final var fieldDescriptor = Type.getDescriptor(fieldType);
-			final var owner = field.getDeclaringClass();
-			final var ownerDescriptor = Type.getDescriptor(owner);
-			final var ownerName = Type.getInternalName(owner);
-			final var generatedName = PrivateUtils.generateName(field);
-			final var generatedNameInternal = generatedName.replace('.', '/');
-			final var generatedNameDescriptor = "L" + generatedNameInternal + ";";
-			final var getMethodDescriptor = "()%s".formatted(fieldDescriptor);
+    /**
+     * Creates a supplier wrapper for the field.
+     * 
+     * @param  <T>                      the type of the field
+     * @param  field                    the field to wrap
+     * @return                          the wrapper
+     * @throws IllegalArgumentException if the field is not public, or its declaring
+     *                                  class is not public
+     */
+    @SuppressWarnings("unchecked")
+    static <T> SupplierWrapper<T> wrapField(final Field field) {
+        return (SupplierWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(field, $ -> {
+            final boolean isStatic = Modifier.isStatic(field.getModifiers());
+            if (!Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot create a supplier wrapper for field \"%s\", as its declaring class is not public!",
+                        field));
+            }
+            if (!Modifier.isPublic(field.getModifiers())) {
+                throw new IllegalArgumentException(String
+                        .format("Cannot create a supplier wrapper for field \"%s\", as it is not public!", field));
+            }
+            final Class<?> fieldType = field.getType();
+            final String fieldDescriptor = Type.getDescriptor(fieldType);
+            final Class<?> owner = field.getDeclaringClass();
+            final String ownerDescriptor = Type.getDescriptor(owner);
+            final String ownerName = Type.getInternalName(owner);
+            final String generatedName = PrivateUtils.generateName(field);
+            final String generatedNameInternal = generatedName.replace('.', '/');
+            final String generatedNameDescriptor = "L" + generatedNameInternal + ";";
+            final String getMethodDescriptor = String.format("()%s", fieldDescriptor);
 
-			PrivateUtils.LOGGER.debug("Generating SupplierWrapper for field \"{}\"...", field);
+            PrivateUtils.LOGGER.debug("Generating SupplierWrapper for field \"{}\"...", field);
 
-			ClassWriter cw = new ClassWriter(0);
-			FieldVisitor fv;
-			MethodVisitor mv;
+            ClassWriter cw = new ClassWriter(0);
+            FieldVisitor fv;
+            MethodVisitor mv;
 
-			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"),
-					ACC_PUBLIC | ACC_FINAL | ACC_SUPER, generatedNameInternal,
-					"%sL%s<%s>;".formatted(OBJECT_DESCRIPTOR, SUPPLIER_NAME, fieldDescriptor), OBJECT_NAME,
-					new String[] {
-							SUPPLIER_NAME
-			});
+            cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"), ACC_PUBLIC | ACC_FINAL | ACC_SUPER,
+                    generatedNameInternal,
+                    String.format("%sL%s<%s>;", OBJECT_DESCRIPTOR, SUPPLIER_NAME, fieldDescriptor), OBJECT_NAME,
+                    new String[] {
+                            SUPPLIER_NAME
+            });
 
-			cw.visitSource(".dynamic", null);
-			ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
+            cw.visitSource(".dynamic", null);
+            ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
 
-			if (!isStatic) {
-				fv = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
-				fv.visitEnd();
-			}
+            if (!isStatic) {
+                fv = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
+                fv.visitEnd();
+            }
 
-			{
-				mv = cw.visitMethod(ACC_PUBLIC, "<init>",
-						"(%s)V".formatted(isStatic ? "" : ownerDescriptor), null, null);
-				mv.visitCode();
-				Label label0 = new Label();
-				mv.visitLabel(label0);
-				mv.visitLineNumber(isStatic ? 5 : 9, label0);
-				mv.visitVarInsn(ALOAD, 0);
-				mv.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
-				if (isStatic) {
-					mv.visitInsn(RETURN);
-					Label label1 = new Label();
-					mv.visitLabel(label1);
-					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
-				} else {
-					Label label1 = new Label();
-					mv.visitLabel(label1);
-					mv.visitLineNumber(10, label1);
-					mv.visitVarInsn(ALOAD, 0);
-					mv.visitVarInsn(ALOAD, 1);
-					mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
-					Label label2 = new Label();
-					mv.visitLabel(label2);
-					mv.visitLineNumber(11, label2);
-					mv.visitInsn(RETURN);
-					Label label3 = new Label();
-					mv.visitLabel(label3);
-					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
-					mv.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
-				}
-				mv.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
-				mv.visitEnd();
-			}
-			{
-				mv = cw.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
-				mv.visitCode();
-				Label label0 = new Label();
-				Label label1 = new Label();
-				mv.visitLabel(label0);
-				mv.visitLineNumber(isStatic ? 9 : 15, label0);
-				if (isStatic) {
-					mv.visitLineNumber(9, label0);
-					mv.visitFieldInsn(GETSTATIC, ownerName, field.getName(), fieldDescriptor);
-					mv.visitInsn(ARETURN);
-					mv.visitLabel(label1);
-				} else {
-					mv.visitVarInsn(ALOAD, 0);
-					mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
-					mv.visitFieldInsn(GETFIELD, ownerName, field.getName(), fieldDescriptor);
-					mv.visitInsn(ARETURN);
-					mv.visitLabel(label1);
-				}
-				mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
-				mv.visitMaxs(1, 1);
-				mv.visitEnd();
-			}
-			{
-				mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get",
-						"()Ljava/lang/Object;", null, null);
-				mv.visitCode();
-				Label label0 = new Label();
-				mv.visitLabel(label0);
-				mv.visitLineNumber(1, label0);
-				mv.visitVarInsn(ALOAD, 0);
-				mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
-				mv.visitInsn(ARETURN);
-				mv.visitMaxs(1, 1);
-				mv.visitEnd();
-			}
-			cw.visitEnd();
-			final var bytes = cw.toByteArray();
-			PrivateUtils.LOGGER.debug("Finished generating SupplierWrapper for field \"{}\"", field);
-			return new SupplierWrapper<T>() {
+            {
+                mv = cw.visitMethod(ACC_PUBLIC, "<init>", String.format("(%s)V", isStatic ? "" : ownerDescriptor), null,
+                        null);
+                mv.visitCode();
+                Label label0 = new Label();
+                mv.visitLabel(label0);
+                mv.visitLineNumber(isStatic ? 5 : 9, label0);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
+                if (isStatic) {
+                    mv.visitInsn(RETURN);
+                    Label label1 = new Label();
+                    mv.visitLabel(label1);
+                    mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+                } else {
+                    Label label1 = new Label();
+                    mv.visitLabel(label1);
+                    mv.visitLineNumber(10, label1);
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitVarInsn(ALOAD, 1);
+                    mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
+                    Label label2 = new Label();
+                    mv.visitLabel(label2);
+                    mv.visitLineNumber(11, label2);
+                    mv.visitInsn(RETURN);
+                    Label label3 = new Label();
+                    mv.visitLabel(label3);
+                    mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
+                    mv.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
+                }
+                mv.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
+                mv.visitEnd();
+            }
+            {
+                mv = cw.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
+                mv.visitCode();
+                Label label0 = new Label();
+                Label label1 = new Label();
+                mv.visitLabel(label0);
+                mv.visitLineNumber(isStatic ? 9 : 15, label0);
+                if (isStatic) {
+                    mv.visitLineNumber(9, label0);
+                    mv.visitFieldInsn(GETSTATIC, ownerName, field.getName(), fieldDescriptor);
+                    mv.visitInsn(ARETURN);
+                    mv.visitLabel(label1);
+                } else {
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
+                    mv.visitFieldInsn(GETFIELD, ownerName, field.getName(), fieldDescriptor);
+                    mv.visitInsn(ARETURN);
+                    mv.visitLabel(label1);
+                }
+                mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+                mv.visitMaxs(1, 1);
+                mv.visitEnd();
+            }
+            {
+                mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get", "()Ljava/lang/Object;", null, null);
+                mv.visitCode();
+                Label label0 = new Label();
+                mv.visitLabel(label0);
+                mv.visitLineNumber(1, label0);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
+                mv.visitInsn(ARETURN);
+                mv.visitMaxs(1, 1);
+                mv.visitEnd();
+            }
+            cw.visitEnd();
+            final byte[] bytes = cw.toByteArray();
+            PrivateUtils.LOGGER.debug("Finished generating SupplierWrapper for field \"{}\"", field);
+            return new SupplierWrapper<T>() {
 
-				final Supplier<T> staticSupplier = isStatic
-						? (Supplier<T>) LambdaUtils
-								.rethrowSupplier(() -> getGeneratedClass().getDeclaredConstructor().newInstance()).get()
-						: null;
-				final ConstructorWrapper<?> constructorWrapper = isStatic ? null
-						: LambdaUtils.rethrowSupplier(
-								() -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
+                final Supplier<T> staticSupplier = isStatic
+                        ? (Supplier<T>) LambdaUtils
+                                .rethrowSupplier(() -> getGeneratedClass().getDeclaredConstructor().newInstance()).get()
+                        : null;
+                final ConstructorWrapper<?> constructorWrapper = isStatic ? null
+                        : LambdaUtils.rethrowSupplier(
+                                () -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
 
-				@Override
-				public @NotNull byte[] getClassBytes() {
-					return bytes;
-				}
+                @Override
+                public @NotNull byte[] getClassBytes() {
+                    return bytes;
+                }
 
-				@Override
-				public @NotNull Class<?> getGeneratedClass() {
-					return ASMUtilsClassLoader.INSTANCE.define(generatedName, bytes);
-				}
+                @Override
+                public @NotNull Class<?> getGeneratedClass() {
+                    return ASMUtilsClassLoader.INSTANCE.define(generatedName, bytes);
+                }
 
-				@Override
-				public T get() {
-					if (isStatic) {
-						return staticSupplier.get();
-					} else {
-						throw new UnsupportedOperationException(
-								"The field wrapped by this wrapper (\"%s\") is not static! Use `onTarget` in order to get a supplier invoking the wrapped field on an instance."
-										.formatted(field));
-					}
-				}
+                @Override
+                public T get() {
+                    if (isStatic) {
+                        return staticSupplier.get();
+                    } else {
+                        throw new UnsupportedOperationException(String.format(
+                                "The field wrapped by this wrapper (\"%s\") is not static! Use `onTarget` in order to get a supplier invoking the wrapped field on an instance.",
+                                field));
+                    }
+                }
 
-				@Override
-				public @NotNull Supplier<T> onTarget(@NotNull Object target) {
-					if (isStatic) {
-						throw new UnsupportedOperationException(
-								"The field wrapped by this wrapper (\"%s\") is static! Use `get` instead."
-										.formatted(field));
-					}
-					if (!owner.isAssignableFrom(target.getClass())) {
-						throw new ClassCastException(
-								"Object \"%s\" cannot be cast to the declaring class of the wrapped field \"%s\""
-										.formatted(target, owner));
-					}
-					return (Supplier<T>) constructorWrapper.invoke(target);
-				}
+                @Override
+                public @NotNull Supplier<T> onTarget(@NotNull Object target) {
+                    if (isStatic) {
+                        throw new UnsupportedOperationException(String.format(
+                                "The field wrapped by this wrapper (\"%s\") is static! Use `get` instead.", field));
+                    }
+                    if (!owner.isAssignableFrom(target.getClass())) {
+                        throw new ClassCastException(String.format(
+                                "Object \"%s\" cannot be cast to the declaring class of the wrapped field \"%s\"",
+                                target, owner));
+                    }
+                    return (Supplier<T>) constructorWrapper.invoke(target);
+                }
 
-				@Override
-				public boolean isStatic() {
-					return isStatic;
-				}
+                @Override
+                public boolean isStatic() {
+                    return isStatic;
+                }
 
-				@Override
-				public boolean wrapsField() {
-					return true;
-				}
+                @Override
+                public boolean wrapsField() {
+                    return true;
+                }
 
-				@Override
-				public @NotNull Class<T> getResultType() {
-					return (@NotNull Class<T>) fieldType;
-				}
+                @Override
+                public @NotNull Class<T> getResultType() {
+                    return (@NotNull Class<T>) fieldType;
+                }
 
-			};
-		});
-	}
+            };
+        });
+    }
 
-	/**
-	 * Creates a {@link SupplierWrapper} for a method.
-	 * 
-	 * @param  <T>                      the return type of the method
-	 * @param  method                   the method to wrap
-	 * @return                          the wrapper
-	 * @throws IllegalArgumentException if the wrapped method meets one of the
-	 *                                  following conditions:
-	 *                                  <ul>
-	 *                                  <li>the method is not public</li>
-	 *                                  <li>the declaring class of the method is not
-	 *                                  public</li>
-	 *                                  <li>the method returns void (doesn't have a
-	 *                                  return type)</li>
-	 *                                  <li>the method has parameters</i>
-	 *                                  </ul>
-	 */
-	@SuppressWarnings("unchecked")
-	static <T> SupplierWrapper<T> wrapMethod(final Method method) {
-		return (SupplierWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(method, $ -> {
-			final var isStatic = Modifier.isStatic(method.getModifiers());
-			if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
-				throw new IllegalArgumentException(
-						"Cannot create a supplier wrapper for method \"%s\", as its declaring class is not public!"
-								.formatted(method));
-			}
-			if (method.getParameterTypes().length != 0) {
-				throw new IllegalArgumentException(
-						"Cannot create a supplier wrapper for method \"%s\", as it has parameters!".formatted(method));
-			}
-			if (!Modifier.isPublic(method.getModifiers())) {
-				throw new IllegalArgumentException(
-						"Cannot create a supplier wrapper for method \"%s\", as it is not public!".formatted(method));
-			}
-			if (method.getReturnType() == void.class) {
-				throw new IllegalArgumentException(
-						"Cannot create a supplier wrapper for method \"%s\", as its return type is void!"
-								.formatted(method));
-			}
-			final var returnType = method.getReturnType();
-			final var returnDescriptor = Type.getDescriptor(returnType);
-			final var owner = method.getDeclaringClass();
-			final var ownerDescriptor = Type.getDescriptor(owner);
-			final var ownerName = Type.getInternalName(owner);
-			final var generatedName = PrivateUtils.generateName(method);
-			final var generatedNameInternal = generatedName.replace('.', '/');
-			final var generatedNameDescriptor = "L" + generatedNameInternal + ";";
-			final var getMethodDescriptor = "()%s".formatted(returnDescriptor);
+    /**
+     * Creates a {@link SupplierWrapper} for a method.
+     * 
+     * @param  <T>                      the return type of the method
+     * @param  method                   the method to wrap
+     * @return                          the wrapper
+     * @throws IllegalArgumentException if the wrapped method meets one of the
+     *                                  following conditions:
+     *                                  <ul>
+     *                                  <li>the method is not public</li>
+     *                                  <li>the declaring class of the method is not
+     *                                  public</li>
+     *                                  <li>the method returns void (doesn't have a
+     *                                  return type)</li>
+     *                                  <li>the method has parameters</i>
+     *                                  </ul>
+     */
+    @SuppressWarnings("unchecked")
+    static <T> SupplierWrapper<T> wrapMethod(final Method method) {
+        return (SupplierWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(method, $ -> {
+            final boolean isStatic = Modifier.isStatic(method.getModifiers());
+            if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot create a supplier wrapper for method \"%s\", as its declaring class is not public!",
+                        method));
+            }
+            if (method.getParameterTypes().length != 0) {
+                throw new IllegalArgumentException(String
+                        .format("Cannot create a supplier wrapper for method \"%s\", as it has parameters!", method));
+            }
+            if (!Modifier.isPublic(method.getModifiers())) {
+                throw new IllegalArgumentException(String
+                        .format("Cannot create a supplier wrapper for method \"%s\", as it is not public!", method));
+            }
+            if (method.getReturnType() == void.class) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot create a supplier wrapper for method \"%s\", as its return type is void!", method));
+            }
+            final Class<?> returnType = method.getReturnType();
+            final String returnDescriptor = Type.getDescriptor(returnType);
+            final Class<?> owner = method.getDeclaringClass();
+            final String ownerDescriptor = Type.getDescriptor(owner);
+            final String ownerName = Type.getInternalName(owner);
+            final String generatedName = PrivateUtils.generateName(method);
+            final String generatedNameInternal = generatedName.replace('.', '/');
+            final String generatedNameDescriptor = "L" + generatedNameInternal + ";";
+            final String getMethodDescriptor = String.format("()%s", returnDescriptor);
 
-			PrivateUtils.LOGGER.debug("Generating SupplierWrapper for method \"{}\"...", method);
+            PrivateUtils.LOGGER.debug("Generating SupplierWrapper for method \"{}\"...", method);
 
-			ClassWriter cw = new ClassWriter(0);
-			FieldVisitor fv;
-			MethodVisitor mv;
+            ClassWriter cw = new ClassWriter(0);
+            FieldVisitor fv;
+            MethodVisitor mv;
 
-			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"),
-					ACC_PUBLIC | ACC_SUPER | ACC_FINAL, generatedNameInternal,
-					"Ljava/lang/Object;L%s<%s>;".formatted(SUPPLIER_NAME, returnDescriptor), OBJECT_NAME, new String[] {
-							SUPPLIER_NAME
-			});
+            cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "SupplierWrapper"), ACC_PUBLIC | ACC_SUPER | ACC_FINAL,
+                    generatedNameInternal, String.format("Ljava/lang/Object;L%s<%s>;", SUPPLIER_NAME, returnDescriptor),
+                    OBJECT_NAME, new String[] {
+                            SUPPLIER_NAME
+            });
 
-			cw.visitSource(".dynamic", null);
+            cw.visitSource(".dynamic", null);
 
-			ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
+            ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
 
-			if (!isStatic) {
-				fv = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
-				fv.visitEnd();
-			}
+            if (!isStatic) {
+                fv = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
+                fv.visitEnd();
+            }
 
-			{
-				mv = cw.visitMethod(ACC_PUBLIC, "<init>",
-						"(%s)V".formatted(isStatic ? "" : ownerDescriptor), null, null);
-				mv.visitCode();
-				Label label0 = new Label();
-				mv.visitLabel(label0);
-				mv.visitLineNumber(isStatic ? 3 : 7, label0);
-				mv.visitVarInsn(ALOAD, 0);
-				mv.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
-				if (isStatic) {
-					mv.visitInsn(RETURN);
-					Label label1 = new Label();
-					mv.visitLabel(label1);
-					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
-				} else {
-					Label label1 = new Label();
-					mv.visitLabel(label1);
-					mv.visitLineNumber(8, label1);
-					mv.visitVarInsn(ALOAD, 0);
-					mv.visitVarInsn(ALOAD, 1);
-					mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
-					Label label2 = new Label();
-					mv.visitLabel(label2);
-					mv.visitLineNumber(9, label2);
-					mv.visitInsn(RETURN);
-					Label label3 = new Label();
-					mv.visitLabel(label3);
-					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
-					mv.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
-				}
-				mv.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
-				mv.visitEnd();
-			}
-			{
-				mv = cw.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
-				mv.visitCode();
-				Label label0 = new Label();
-				mv.visitLabel(label0);
-				mv.visitLineNumber(isStatic ? 7 : 13, label0);
+            {
+                mv = cw.visitMethod(ACC_PUBLIC, "<init>", String.format("(%s)V", isStatic ? "" : ownerDescriptor), null,
+                        null);
+                mv.visitCode();
+                Label label0 = new Label();
+                mv.visitLabel(label0);
+                mv.visitLineNumber(isStatic ? 3 : 7, label0);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKESPECIAL, OBJECT_NAME, "<init>", "()V", false);
+                if (isStatic) {
+                    mv.visitInsn(RETURN);
+                    Label label1 = new Label();
+                    mv.visitLabel(label1);
+                    mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+                } else {
+                    Label label1 = new Label();
+                    mv.visitLabel(label1);
+                    mv.visitLineNumber(8, label1);
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitVarInsn(ALOAD, 1);
+                    mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
+                    Label label2 = new Label();
+                    mv.visitLabel(label2);
+                    mv.visitLineNumber(9, label2);
+                    mv.visitInsn(RETURN);
+                    Label label3 = new Label();
+                    mv.visitLabel(label3);
+                    mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label3, 0);
+                    mv.visitLocalVariable("instance", ownerDescriptor, null, label0, label3, 1);
+                }
+                mv.visitMaxs(isStatic ? 1 : 2, isStatic ? 1 : 2);
+                mv.visitEnd();
+            }
+            {
+                mv = cw.visitMethod(ACC_PUBLIC, "get", getMethodDescriptor, null, null);
+                mv.visitCode();
+                Label label0 = new Label();
+                mv.visitLabel(label0);
+                mv.visitLineNumber(isStatic ? 7 : 13, label0);
 
-				if (isStatic) {
-					mv.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(),
-							Type.getMethodDescriptor(method), false);
-				} else {
-					mv.visitVarInsn(ALOAD, 0);
-					mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
-					mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), getMethodDescriptor,
-							false);
-				}
-				mv.visitInsn(ARETURN);
-				Label label1 = new Label();
-				mv.visitLabel(label1);
-				mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
-				mv.visitMaxs(isStatic ? 1 : 2, 1);
-				mv.visitEnd();
-			}
-			{
-				// Generate the synthetic `get`
-				mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get",
-						"()%s".formatted(OBJECT_DESCRIPTOR), null, null);
-				mv.visitCode();
-				Label label0 = new Label();
-				mv.visitLabel(label0);
-				mv.visitLineNumber(1, label0);
-				mv.visitVarInsn(ALOAD, 0);
-				mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
-				mv.visitInsn(ARETURN);
-				mv.visitMaxs(1, 1);
-				mv.visitEnd();
-			}
-			cw.visitEnd();
-			final var bytes = cw.toByteArray();
-			PrivateUtils.LOGGER.debug("Finished generating SupplierWrapper for method \"{}\"", method);
-			return new SupplierWrapper<T>() {
+                if (isStatic) {
+                    mv.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(), Type.getMethodDescriptor(method),
+                            false);
+                } else {
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), getMethodDescriptor, false);
+                }
+                mv.visitInsn(ARETURN);
+                Label label1 = new Label();
+                mv.visitLabel(label1);
+                mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, label1, 0);
+                mv.visitMaxs(isStatic ? 1 : 2, 1);
+                mv.visitEnd();
+            }
+            {
+                // Generate the synthetic `get`
+                mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "get",
+                        String.format("()%s", OBJECT_DESCRIPTOR), null, null);
+                mv.visitCode();
+                Label label0 = new Label();
+                mv.visitLabel(label0);
+                mv.visitLineNumber(1, label0);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "get", getMethodDescriptor, false);
+                mv.visitInsn(ARETURN);
+                mv.visitMaxs(1, 1);
+                mv.visitEnd();
+            }
+            cw.visitEnd();
+            final byte[] bytes = cw.toByteArray();
+            PrivateUtils.LOGGER.debug("Finished generating SupplierWrapper for method \"{}\"", method);
+            return new SupplierWrapper<T>() {
 
-				final Supplier<T> staticSupplier = isStatic
-						? (Supplier<T>) LambdaUtils
-								.rethrowSupplier(() -> getGeneratedClass().getDeclaredConstructor().newInstance()).get()
-						: null;
-				final ConstructorWrapper<?> constructorWrapper = isStatic ? null
-						: LambdaUtils.rethrowSupplier(
-								() -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
+                final Supplier<T> staticSupplier = isStatic
+                        ? (Supplier<T>) LambdaUtils
+                                .rethrowSupplier(() -> getGeneratedClass().getDeclaredConstructor().newInstance()).get()
+                        : null;
+                final ConstructorWrapper<?> constructorWrapper = isStatic ? null
+                        : LambdaUtils.rethrowSupplier(
+                                () -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
 
-				@Override
-				public @NotNull byte[] getClassBytes() {
-					return bytes;
-				}
+                @Override
+                public @NotNull byte[] getClassBytes() {
+                    return bytes;
+                }
 
-				@Override
-				public @NotNull Class<?> getGeneratedClass() {
-					return ASMUtilsClassLoader.INSTANCE.define(generatedName, bytes);
-				}
+                @Override
+                public @NotNull Class<?> getGeneratedClass() {
+                    return ASMUtilsClassLoader.INSTANCE.define(generatedName, bytes);
+                }
 
-				@Override
-				public T get() {
-					if (isStatic) {
-						return staticSupplier.get();
-					} else {
-						throw new UnsupportedOperationException(
-								"The method wrapped by this wrapper (\"%s\") is not static! Use `onTarget` in order to get a supplier invoking the wrapped method on an instance."
-										.formatted(method));
-					}
-				}
+                @Override
+                public T get() {
+                    if (isStatic) {
+                        return staticSupplier.get();
+                    } else {
+                        throw new UnsupportedOperationException(String.format(
+                                "The method wrapped by this wrapper (\"%s\") is not static! Use `onTarget` in order to get a supplier invoking the wrapped method on an instance.",
+                                method));
+                    }
+                }
 
-				@Override
-				public @NotNull Supplier<T> onTarget(@NotNull Object target) {
-					if (isStatic) {
-						throw new UnsupportedOperationException(
-								"The method wrapped by this wrapper (\"%s\") is static! Use `get` instead."
-										.formatted(method));
-					}
-					if (!owner.isAssignableFrom(target.getClass())) {
-						throw new ClassCastException(
-								"Object \"%s\" cannot be cast to the declaring class of the wrapped method \"%s\""
-										.formatted(target, owner));
-					}
-					return (Supplier<T>) constructorWrapper.invoke(target);
-				}
+                @Override
+                public @NotNull Supplier<T> onTarget(@NotNull Object target) {
+                    if (isStatic) {
+                        throw new UnsupportedOperationException(String.format(
+                                "The method wrapped by this wrapper (\"%s\") is static! Use `get` instead.", method));
+                    }
+                    if (!owner.isAssignableFrom(target.getClass())) {
+                        throw new ClassCastException(String.format(
+                                "Object \"%s\" cannot be cast to the declaring class of the wrapped method \"%s\"",
+                                target, owner));
+                    }
+                    return (Supplier<T>) constructorWrapper.invoke(target);
+                }
 
-				@Override
-				public boolean isStatic() {
-					return isStatic;
-				}
+                @Override
+                public boolean isStatic() {
+                    return isStatic;
+                }
 
-				@Override
-				public boolean wrapsField() {
-					return false;
-				}
+                @Override
+                public boolean wrapsField() {
+                    return false;
+                }
 
-				@Override
-				public @NotNull Class<T> getResultType() {
-					return (@NotNull Class<T>) returnType;
-				}
+                @Override
+                public @NotNull Class<T> getResultType() {
+                    return (@NotNull Class<T>) returnType;
+                }
 
-			};
-		});
-	}
+            };
+        });
+    }
 
-	/**
-	 * Only if the wrapped member is <strong>static</strong>. <br>
-	 * If a field is wrapped, returns it's value, otherwise returns the result of
-	 * the invocation of the wrapped method.
-	 * 
-	 * @return                               the result
-	 * @throws UnsupportedOperationException if the wrapped member is <i>not</i>
-	 *                                       static
-	 */
-	@Override
-	T get();
+    /**
+     * Only if the wrapped member is <strong>static</strong>. <br>
+     * If a field is wrapped, returns it's value, otherwise returns the result of
+     * the invocation of the wrapped method.
+     * 
+     * @return                               the result
+     * @throws UnsupportedOperationException if the wrapped member is <i>not</i>
+     *                                       static
+     */
+    @Override
+    T get();
 
-	/**
-	 * If the element wrapped is <strong>not</strong> static, returns a
-	 * {@link java.util.function.Supplier} that, if wrapping a field, returns the
-	 * value of the field in that {@code target}, otherwise the value returned by
-	 * calling the wrapped method on the {@code target}.
-	 * 
-	 * @param  target                        the target
-	 * @throws UnsupportedOperationException if the element wrapped is
-	 *                                       <strong>static</strong>
-	 * @throws ClassCastException            if the {@code target} cannot be cast to
-	 *                                       the declaring class of the wrapped
-	 *                                       element
-	 */
-	@NotNull
-	Supplier<T> onTarget(@NotNull Object target);
+    /**
+     * If the element wrapped is <strong>not</strong> static, returns a
+     * {@link java.util.function.Supplier} that, if wrapping a field, returns the
+     * value of the field in that {@code target}, otherwise the value returned by
+     * calling the wrapped method on the {@code target}.
+     * 
+     * @param  target                        the target
+     * @throws UnsupportedOperationException if the element wrapped is
+     *                                       <strong>static</strong>
+     * @throws ClassCastException            if the {@code target} cannot be cast to
+     *                                       the declaring class of the wrapped
+     *                                       element
+     */
+    @NotNull
+    Supplier<T> onTarget(@NotNull Object target);
 
-	/**
-	 * Checks if the member wrapped by this wrapper is static.
-	 * 
-	 * @return if the member wrapped by this wrapper is static
-	 */
-	boolean isStatic();
+    /**
+     * Checks if the member wrapped by this wrapper is static.
+     * 
+     * @return if the member wrapped by this wrapper is static
+     */
+    boolean isStatic();
 
-	/**
-	 * Checks if this wrapper wraps a field. {@code False} means that a method is
-	 * wrapped.
-	 * 
-	 * @return if this wrapper wraps a field
-	 */
-	boolean wrapsField();
+    /**
+     * Checks if this wrapper wraps a field. {@code False} means that a method is
+     * wrapped.
+     * 
+     * @return if this wrapper wraps a field
+     */
+    boolean wrapsField();
 
-	/**
-	 * If a field is wrapped, returns its type, otherwise returns the return type of
-	 * the wrapped method.
-	 * 
-	 * @return the return type
-	 */
-	@NotNull
-	Class<T> getResultType();
+    /**
+     * If a field is wrapped, returns its type, otherwise returns the return type of
+     * the wrapped method.
+     * 
+     * @return the return type
+     */
+    @NotNull
+    Class<T> getResultType();
 
-	//@formatter:off
+    //@formatter:off
 	class PrivateUtils {
 
 		private static final Logger LOGGER = LoggerFactory.getLogger(SupplierWrapper.class);
@@ -556,8 +551,8 @@ public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 		private static final AtomicInteger CREATED_WRAPPERS = new AtomicInteger();
 
 		private static String generateName(Method method) {
-			final var isStatic = Modifier.isStatic(method.getModifiers());
-			return ClassNameGenerator.resolveOnBasePackage("%s$%s$m_%s_%s$%s_%s".formatted(
+			final boolean isStatic = Modifier.isStatic(method.getModifiers());
+			return ClassNameGenerator.resolveOnBasePackage(String.format("%s$%s$m_%s_%s$%s_%s",
 					SupplierWrapper.class.getSimpleName(),
 					CREATED_WRAPPERS.getAndIncrement(), 
 					method.getDeclaringClass().getSimpleName(),
@@ -566,8 +561,8 @@ public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 					method.getReturnType().getSimpleName()));
 		}
 		private static String generateName(Field field) {
-			final var isStatic = Modifier.isStatic(field.getModifiers());
-			return ClassNameGenerator.resolveOnBasePackage("%s$%s$f_%s_%s$%s_%s".formatted(
+			final boolean isStatic = Modifier.isStatic(field.getModifiers());
+			return ClassNameGenerator.resolveOnBasePackage(String.format("%s$%s$f_%s_%s$%s_%s", 
 					SupplierWrapper.class.getSimpleName(),
 					CREATED_WRAPPERS.getAndIncrement(), 
 					field.getDeclaringClass().getSimpleName(),

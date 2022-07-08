@@ -34,54 +34,54 @@ import static org.objectweb.asm.Opcodes.*;
 
 public final class JavaGetter {
 
-	public static int getJavaVersionAsOpcode(int minVersion, String featureName) {
-		final var version = getJavaVersion();
-		if (minVersion > version) {
-			throw new UnsupportedOperationException(
-					"The feature %s requires Java %s or greater! Currently, the Java version is %s"
-							.formatted(featureName, minVersion, version));
-		}
-		return versionToOpcode(version);
-	}
+    public static int getJavaVersionAsOpcode(int minVersion, String featureName) {
+        final int version = getJavaVersion();
+        if (minVersion > version) {
+            throw new UnsupportedOperationException(
+                    String.format("The feature %s requires Java %s or greater! Currently, the Java version is %s",
+                            featureName, minVersion, version));
+        }
+        return versionToOpcode(version);
+    }
 
-	public static int getJavaVersion() {
-		String version = System.getProperty("java.version");
-		if (version.startsWith("1.")) {
-			version = version.substring(2, 3);
-		} else {
-			int dot = version.indexOf(".");
-			if (dot != -1) {
-				version = version.substring(0, dot);
-			}
-		}
-		return Integer.parseInt(version);
-	}
+    public static int getJavaVersion() {
+        String version = System.getProperty("java.version");
+        if (version.startsWith("1.")) {
+            version = version.substring(2, 3);
+        } else {
+            int dot = version.indexOf(".");
+            if (dot != -1) {
+                version = version.substring(0, dot);
+            }
+        }
+        return Integer.parseInt(version);
+    }
 
-	private static final Map<Integer, Integer> TO_OP_CODE;
-	static {
-		final var map = new HashMap<Integer, Integer>();
-		map.put(1, V1_1);
-		map.put(2, V1_2);
-		map.put(3, V1_3);
-		map.put(4, V1_4);
-		map.put(5, V1_5);
-		map.put(6, V1_6);
-		map.put(7, V1_7);
-		map.put(8, V1_8);
-		map.put(9, V9);
-		map.put(10, V10);
-		map.put(11, V11);
-		map.put(12, V12);
-		map.put(13, V13);
-		map.put(14, V14);
-		map.put(15, V15);
-		map.put(16, V16);
-		map.put(17, V17);
-		map.put(18, V18);
-		TO_OP_CODE = Map.copyOf(map);
-	}
+    private static final Map<Integer, Integer> TO_OP_CODE;
+    static {
+        final HashMap<Integer, Integer> map = new HashMap<>();
+        map.put(1, V1_1);
+        map.put(2, V1_2);
+        map.put(3, V1_3);
+        map.put(4, V1_4);
+        map.put(5, V1_5);
+        map.put(6, V1_6);
+        map.put(7, V1_7);
+        map.put(8, V1_8);
+        map.put(9, V9);
+        map.put(10, V10);
+        map.put(11, V11);
+        map.put(12, V12);
+        map.put(13, V13);
+        map.put(14, V14);
+        map.put(15, V15);
+        map.put(16, V16);
+        map.put(17, V17);
+        map.put(18, V18);
+        TO_OP_CODE = map;
+    }
 
-	public static int versionToOpcode(int version) {
-		return TO_OP_CODE.get(version);
-	}
+    public static int versionToOpcode(int version) {
+        return TO_OP_CODE.get(version);
+    }
 }

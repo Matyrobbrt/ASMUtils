@@ -15,7 +15,7 @@ plugins {
 	id 'eclipse'
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 group = "io.github.matyrobbrt" // TODO maybe in a future version, it could be moved to `com.matyrobbrt`
 archivesBaseName = "asmutils"
@@ -72,9 +72,6 @@ java {
 }
 
 allprojects {
-	compileJava {
-		options.release.set(17)
-	}
 	javadoc.options.addStringOption('Xdoclint:none', '-quiet')
 
 	apply plugin: 'maven-publish'

@@ -41,22 +41,23 @@ import static org.objectweb.asm.Opcodes.*;
 public class ToDoWrappers {
 
 	public static byte[] makeFunctionWrapper(Method method) {
-		final var inputDescriptor = Type.getDescriptor(method.getParameterTypes()[0]);
-		final var inputName = Type.getInternalName(method.getParameterTypes()[0]);
-		final var outputDescriptor = Type.getDescriptor(method.getReturnType());
-		final var ownerDescriptor = Type.getDescriptor(method.getDeclaringClass());
-		final var ownerName = Type.getInternalName(method.getDeclaringClass());
-		final var isStatic = Modifier.isStatic(method.getModifiers());
-		final var generatedName = "ThingyFunction";
-		final var generatedNameDescriptor = "LThingyFunction;";
-		final var functionMethodDescriptor = "(%s)%s".formatted(inputDescriptor, outputDescriptor);
+        final String inputDescriptor = Type.getDescriptor(method.getParameterTypes()[0]);
+        final String inputName = Type.getInternalName(method.getParameterTypes()[0]);
+        final String outputDescriptor = Type.getDescriptor(method.getReturnType());
+        final String ownerDescriptor = Type.getDescriptor(method.getDeclaringClass());
+        final String ownerName = Type.getInternalName(method.getDeclaringClass());
+        final boolean isStatic = Modifier.isStatic(method.getModifiers());
+        final String generatedName = "ThingyFunction";
+        final String generatedNameDescriptor = "LThingyFunction;";
+        final String functionMethodDescriptor = String.format("(%s)%s", inputDescriptor, outputDescriptor);
 
 		ClassWriter classWriter = new ClassWriter(0);
 		FieldVisitor fieldVisitor;
 		MethodVisitor methodVisitor;
 
 		classWriter.visit(V1_8, ACC_PUBLIC | ACC_SUPER | ACC_FINAL, generatedName,
-				"Ljava/lang/Object;Ljava/util/function/Function<%s%s>;".formatted(inputDescriptor, outputDescriptor),
+                String.format("Ljava/lang/Object;Ljava/util/function/Function<%s%s>;", inputDescriptor,
+                        outputDescriptor),
 				"java/lang/Object", new String[] {
 						"java/util/function/Function"
 				});
@@ -69,7 +70,7 @@ public class ToDoWrappers {
 		}
 		{
 			methodVisitor = classWriter.visitMethod(ACC_PUBLIC, "<init>",
-					"(%s)V".formatted(isStatic ? "" : ownerDescriptor), null, null);
+                    String.format("(%s)V", isStatic ? "" : ownerDescriptor), null, null);
 			methodVisitor.visitCode();
 			Label label0 = new Label();
 			methodVisitor.visitLabel(label0);
@@ -106,7 +107,7 @@ public class ToDoWrappers {
 				methodVisitor.visitLineNumber(9, label0);
 				methodVisitor.visitVarInsn(ALOAD, 1);
 				methodVisitor.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(),
-						"(%s)%s".formatted(inputDescriptor, outputDescriptor), false);
+                        String.format("(%s)%s", inputDescriptor, outputDescriptor), false);
 				methodVisitor.visitInsn(ARETURN);
 				Label label1 = new Label();
 				methodVisitor.visitLabel(label1);

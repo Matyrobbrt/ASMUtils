@@ -25,30 +25,24 @@
  * SOFTWARE.
  */
 
-package io.github.matyrobbrt.asmutils.wrapper;
+package asmutils;
 
-import org.jetbrains.annotations.NotNull;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Base interface for ASM wrappers.
- */
-public interface Wrapper {
+public class ConsumerWrapperTestObject {
 
-    /**
-     * Gets the byte representation of the generated wrapper class.
-     * 
-     * @return the byte representation of the generated wrapper class
-     */
-    @NotNull
-    byte[] getClassBytes();
+    private final int value;
 
-    /**
-     * Gets the wrapper class. The constructor (if existent) of the class can have
-     * different parameters based on what type of wrapper it is.
-     * 
-     * @return the wrapper class
-     */
-    @NotNull
-    Class<?> getGeneratedClass();
+    public ConsumerWrapperTestObject(int value) {
+        this.value = value;
+	}
+
+    public void change(AtomicInteger integ) {
+        integ.set(value);
+	}
+
+    public static void hmm(AtomicInteger integ) {
+        integ.set(12);
+	}
 
 }

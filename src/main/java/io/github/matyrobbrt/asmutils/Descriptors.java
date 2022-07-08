@@ -34,13 +34,13 @@ import org.objectweb.asm.Type;
 
 public class Descriptors {
 
-	public static final String OBJECT_NAME = Type.getInternalName(Object.class);
-	public static final String OBJECT_DESCRIPTOR = Type.getDescriptor(Object.class);
-	public static final String OBJECT_ARRAY_DESCRIPTOR = "[" + Type.getDescriptor(Object.class);
+    public static final String OBJECT_NAME = Type.getInternalName(Object.class);
+    public static final String OBJECT_DESCRIPTOR = Type.getDescriptor(Object.class);
+    public static final String OBJECT_ARRAY_DESCRIPTOR = "[" + Type.getDescriptor(Object.class);
 
-	public static final String FUNCTION_NAME = Type.getInternalName(Function.class);
-	public static final String FUNCTION_DESCRIPTOR = Type.getDescriptor(Function.class);
+    public static final String FUNCTION_NAME = Type.getInternalName(Function.class);
+    public static final String FUNCTION_DESCRIPTOR = Type.getDescriptor(Function.class);
 
-	public static final String SUPPLIER_NAME = Type.getInternalName(Supplier.class);
-	public static final String SUPPLIER_DESCRIPTOR = Type.getDescriptor(Supplier.class);
+    public static final String SUPPLIER_NAME = Type.getInternalName(Supplier.class);
+    public static final String SUPPLIER_DESCRIPTOR = Type.getDescriptor(Supplier.class);
 }

@@ -33,41 +33,42 @@ import java.util.function.Supplier;
 
 public class ASMUtilsClassLoader extends ClassLoader {
 
-	public static final ASMUtilsClassLoader INSTANCE = new ASMUtilsClassLoader();
+    public static final ASMUtilsClassLoader INSTANCE = new ASMUtilsClassLoader();
 
-	private final Map<String, Class<?>> cache = new HashMap<>();
-	private ASMUtilsClassLoader() {
-		super(null);
-	}
+    private final Map<String, Class<?>> cache = new HashMap<>();
 
-	@Override
-	protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
-		return Class.forName(name, resolve, Thread.currentThread().getContextClassLoader());
-	}
+    private ASMUtilsClassLoader() {
+        super(null);
+    }
 
-	/**
-	 * Defines a class.
-	 * 
-	 * @param  name the name of the class
-	 * @param  data a supplier the data of the class
-	 * @return
-	 */
-	public Class<?> define(String name, Supplier<byte[]> data) {
-		return cache.computeIfAbsent(name, $ -> {
-			final var d = data.get();
-			return defineClass(name, d, 0, d.length);
-		});
-	}
+    @Override
+    protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+        return Class.forName(name, resolve, Thread.currentThread().getContextClassLoader());
+    }
 
-	/**
-	 * Defines a class.
-	 * 
-	 * @param  name the name of the class
-	 * @param  data the data of the class
-	 * @return
-	 */
-	public Class<?> define(String name, byte[] data) {
-		return define(name, () -> data);
-	}
+    /**
+     * Defines a class.
+     * 
+     * @param  name the name of the class
+     * @param  data a supplier the data of the class
+     * @return
+     */
+    public Class<?> define(String name, Supplier<byte[]> data) {
+        return cache.computeIfAbsent(name, $ -> {
+            final byte[] d = data.get();
+            return defineClass(name, d, 0, d.length);
+        });
+    }
+
+    /**
+     * Defines a class.
+     * 
+     * @param  name the name of the class
+     * @param  data the data of the class
+     * @return
+     */
+    public Class<?> define(String name, byte[] data) {
+        return define(name, () -> data);
+    }
 
 }

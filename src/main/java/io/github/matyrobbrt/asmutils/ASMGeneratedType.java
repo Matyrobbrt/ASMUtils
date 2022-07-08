@@ -32,6 +32,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.function.BiConsumer;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
 
@@ -46,16 +47,16 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 @Target(TYPE)
 public @interface ASMGeneratedType {
 
-	String DESCRIPTOR = Type.getDescriptor(ASMGeneratedType.class);
-	BiConsumer<ClassVisitor, Type> ANNOTATION_ADDER = (visitor, type) -> {
-		final var an = visitor.visitAnnotation(DESCRIPTOR, false);
-		an.visit("generator", type);
-		an.visitEnd();
-	};
+    String DESCRIPTOR = Type.getDescriptor(ASMGeneratedType.class);
+    BiConsumer<ClassVisitor, Type> ANNOTATION_ADDER = (visitor, type) -> {
+        final AnnotationVisitor an = visitor.visitAnnotation(DESCRIPTOR, false);
+        an.visit("generator", type);
+        an.visitEnd();
+    };
 
-	/**
-	 * @return the class that generated this type
-	 */
-	Class<?> generator();
+    /**
+     * @return the class that generated this type
+     */
+    Class<?> generator();
 
 }

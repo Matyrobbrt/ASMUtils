@@ -31,49 +31,49 @@ import java.util.function.Supplier;
 
 public class LambdaUtils {
 
-	/**
-	 * Sneakily throws the given exception, bypassing compile-time checks for
-	 * checked exceptions.
-	 *
-	 * <p>
-	 * <strong>This method will never return normally.</strong> The exception passed
-	 * to the method is always rethrown.
-	 * </p>
-	 *
-	 * @param ex the exception to sneakily rethrow
-	 */
-	@SuppressWarnings("unchecked")
-	public static <E extends Throwable> void sneakyThrow(Throwable ex) throws E {
-		throw (E) ex;
-	}
+    /**
+     * Sneakily throws the given exception, bypassing compile-time checks for
+     * checked exceptions.
+     *
+     * <p>
+     * <strong>This method will never return normally.</strong> The exception passed
+     * to the method is always rethrown.
+     * </p>
+     *
+     * @param ex the exception to sneakily rethrow
+     */
+    @SuppressWarnings("unchecked")
+    public static <E extends Throwable> void sneakyThrow(Throwable ex) throws E {
+        throw (E) ex;
+    }
 
-	/**
-	 * Converts the given exception supplier into a regular supplier, rethrowing any
-	 * exception as needed.
-	 *
-	 * @param  supplier the exception supplier to convert
-	 * @param  <T>      the type of results supplied by this supplier
-	 * @return          a supplier which returns the result from the given throwing
-	 *                  supplier, rethrowing any exceptions
-	 * @see             #sneakyThrow(Throwable)
-	 */
-	public static <T> Supplier<T> rethrowSupplier(final ThrowingSupplier<T> supplier) {
-		return supplier;
-	}
+    /**
+     * Converts the given exception supplier into a regular supplier, rethrowing any
+     * exception as needed.
+     *
+     * @param  supplier the exception supplier to convert
+     * @param  <T>      the type of results supplied by this supplier
+     * @return          a supplier which returns the result from the given throwing
+     *                  supplier, rethrowing any exceptions
+     * @see             #sneakyThrow(Throwable)
+     */
+    public static <T> Supplier<T> rethrowSupplier(final ThrowingSupplier<T> supplier) {
+        return supplier;
+    }
 
-	@FunctionalInterface
-	public interface ThrowingSupplier<T> extends Supplier<T> {
+    @FunctionalInterface
+    public interface ThrowingSupplier<T> extends Supplier<T> {
 
-		T getThrowing() throws Throwable;
+        T getThrowing() throws Throwable;
 
-		@Override
-		default T get() {
-			try {
-				return getThrowing();
-			} catch (Throwable e) {
-				sneakyThrow(e);
-				return null; // Should never be reached
-			}
-		}
-	}
+        @Override
+        default T get() {
+            try {
+                return getThrowing();
+            } catch (Throwable e) {
+                sneakyThrow(e);
+                return null; // Should never be reached
+            }
+        }
+    }
 }

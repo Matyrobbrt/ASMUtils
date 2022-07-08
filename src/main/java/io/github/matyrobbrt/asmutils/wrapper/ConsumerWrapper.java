@@ -76,302 +76,301 @@ import io.github.matyrobbrt.asmutils.LambdaUtils;
  */
 public interface ConsumerWrapper<T> extends Wrapper, Consumer<T> {
 
-	/**
-	 * The {@link ConsumerWrapper} type.
-	 */
-	Type TYPE = Type.getType(ConsumerWrapper.class);
+    /**
+     * The {@link ConsumerWrapper} type.
+     */
+    Type TYPE = Type.getType(ConsumerWrapper.class);
 
-	/**
-	 * A variant of {@link #wrap(Method)}, which gets the method with the name
-	 * {@code methodName} and the parameter {@code parameterType} from the
-	 * {@code declaringClass}.
-	 * 
-	 * @param  <T>                   the type of the parameter of the method
-	 * @param  declaringClass        the class containing the method to wrap
-	 * @param  methodName            the name of the method to wrap
-	 * @param  parameterType         the parameter type of the method to wrap
-	 * @return                       the wrapper
-	 * @throws NoSuchMethodException if a matching method is not found.
-	 * @throws SecurityException     if
-	 *                               {@link java.lang.Class#getDeclaredMethod(String, Class...)}
-	 *                               throws a {@link SecurityException}
-	 * @see                          #wrap(Method)
-	 */
-	static <T> ConsumerWrapper<T> wrap(@NotNull Class<?> declaringClass, @NotNull String methodName,
-			@NotNull Class<T> parameterType) throws NoSuchMethodException, SecurityException {
-		return wrap(declaringClass.getDeclaredMethod(methodName, parameterType));
-	}
+    /**
+     * A variant of {@link #wrap(Method)}, which gets the method with the name
+     * {@code methodName} and the parameter {@code parameterType} from the
+     * {@code declaringClass}.
+     * 
+     * @param  <T>                   the type of the parameter of the method
+     * @param  declaringClass        the class containing the method to wrap
+     * @param  methodName            the name of the method to wrap
+     * @param  parameterType         the parameter type of the method to wrap
+     * @return                       the wrapper
+     * @throws NoSuchMethodException if a matching method is not found.
+     * @throws SecurityException     if
+     *                               {@link java.lang.Class#getDeclaredMethod(String, Class...)}
+     *                               throws a {@link SecurityException}
+     * @see                          #wrap(Method)
+     */
+    static <T> ConsumerWrapper<T> wrap(@NotNull Class<?> declaringClass, @NotNull String methodName,
+            @NotNull Class<T> parameterType) throws NoSuchMethodException, SecurityException {
+        return wrap(declaringClass.getDeclaredMethod(methodName, parameterType));
+    }
 
-	/**
-	 * Creates a wrapper for the {@code method}.
-	 * 
-	 * @param  <T>                      the type of the parameter of the method
-	 * @param  method                   the method to wrap
-	 * @return                          the wrapper
-	 * @throws IllegalArgumentException if the wrapped method meets one of the
-	 *                                  following conditions:
-	 *                                  <ul>
-	 *                                  <li>the method doesn't have only one
-	 *                                  parameter</li>
-	 *                                  <li>the declaring class of the method is not
-	 *                                  public</li>
-	 *                                  <li>the method is not public</li>
-	 *                                  <li>the method has a return type (doesn't
-	 *                                  return void)</li>
-	 *                                  </ul>
-	 */
-	@SuppressWarnings("unchecked")
-	static <T> ConsumerWrapper<T> wrap(@NotNull Method method) {
-		return (ConsumerWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(method, $ -> {
-			final var isStatic = Modifier.isStatic(method.getModifiers());
-			if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
-				throw new IllegalArgumentException(
-						"Cannot create a consumer wrapper for method \"%s\", as its declaring class is not public!"
-								.formatted(method));
-			}
-			if (method.getParameterTypes().length != 1) {
-				throw new IllegalArgumentException(
-						"Cannot create a consumer wrapper for method \"%s\", as it doesn't have only one parameter!"
-								.formatted(method));
-			}
-			if (!Modifier.isPublic(method.getModifiers())) {
-				throw new IllegalArgumentException(
-						"Cannot create a consumer wrapper for method \"%s\", as it is not public!".formatted(method));
-			}
-			if (method.getReturnType() != void.class) {
-				throw new IllegalArgumentException(
-						"Cannot create a consumer wrapper for method \"%s\", as its return type is not void!"
-								.formatted(method));
-			}
-			final var parameterType = method.getParameterTypes()[0];
-			final var inputDescriptor = Type.getDescriptor(parameterType);
-			final var inputName = Type.getInternalName(parameterType);
-			final var owner = method.getDeclaringClass();
-			final var ownerDescriptor = Type.getDescriptor(owner);
-			final var ownerName = Type.getInternalName(owner);
-			final var generatedName = PrivateUtils.generateName(method);
-			final var generatedNameInternal = generatedName.replace('.', '/');
-			final var generatedNameDescriptor = "L" + generatedNameInternal + ";";
-			final var consumerMethodDescriptor = "(%s)V".formatted(inputDescriptor);
+    /**
+     * Creates a wrapper for the {@code method}.
+     * 
+     * @param  <T>                      the type of the parameter of the method
+     * @param  method                   the method to wrap
+     * @return                          the wrapper
+     * @throws IllegalArgumentException if the wrapped method meets one of the
+     *                                  following conditions:
+     *                                  <ul>
+     *                                  <li>the method doesn't have only one
+     *                                  parameter</li>
+     *                                  <li>the declaring class of the method is not
+     *                                  public</li>
+     *                                  <li>the method is not public</li>
+     *                                  <li>the method has a return type (doesn't
+     *                                  return void)</li>
+     *                                  </ul>
+     */
+    @SuppressWarnings("unchecked")
+    static <T> ConsumerWrapper<T> wrap(@NotNull Method method) {
+        return (ConsumerWrapper<T>) PrivateUtils.CACHE.computeIfAbsent(method, $ -> {
+            final boolean isStatic = Modifier.isStatic(method.getModifiers());
+            if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot create a consumer wrapper for method \"%s\", as its declaring class is not public!",
+                        method));
+            }
+            if (method.getParameterTypes().length != 1) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot create a consumer wrapper for method \"%s\", as it doesn't have only one parameter!",
+                        method));
+            }
+            if (!Modifier.isPublic(method.getModifiers())) {
+                throw new IllegalArgumentException(String
+                        .format("Cannot create a consumer wrapper for method \"%s\", as it is not public!", method));
+            }
+            if (method.getReturnType() != void.class) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot create a consumer wrapper for method \"%s\", as its return type is not void!", method));
+            }
+            final Class<?> parameterType = method.getParameterTypes()[0];
+            final String inputDescriptor = Type.getDescriptor(parameterType);
+            final String inputName = Type.getInternalName(parameterType);
+            final Class<?> owner = method.getDeclaringClass();
+            final String ownerDescriptor = Type.getDescriptor(owner);
+            final String ownerName = Type.getInternalName(owner);
+            final String generatedName = PrivateUtils.generateName(method);
+            final String generatedNameInternal = generatedName.replace('.', '/');
+            final String generatedNameDescriptor = "L" + generatedNameInternal + ";";
+            final String consumerMethodDescriptor = String.format("(%s)V", inputDescriptor);
 
-			PrivateUtils.LOGGER.debug("Generating ConsumerWrapper for method \"{}\"...", method);
+            PrivateUtils.LOGGER.debug("Generating ConsumerWrapper for method \"{}\"...", method);
 
-			ClassWriter cw = new ClassWriter(0);
-			FieldVisitor fieldVisitor;
-			MethodVisitor mv;
+            ClassWriter cw = new ClassWriter(0);
+            FieldVisitor fieldVisitor;
+            MethodVisitor mv;
 
-			cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "ConsumerWrapper"), ACC_PUBLIC | ACC_SUPER | ACC_FINAL,
-					generatedNameInternal,
-					"Ljava/lang/Object;Ljava/util/function/Consumer<%s>;".formatted(inputDescriptor),
-					Descriptors.OBJECT_NAME, new String[] {
-							"java/util/function/Consumer"
-			});
+            cw.visit(JavaGetter.getJavaVersionAsOpcode(8, "ConsumerWrapper"), ACC_PUBLIC | ACC_SUPER | ACC_FINAL,
+                    generatedNameInternal,
+                    String.format("Ljava/lang/Object;Ljava/util/function/Consumer<%s>;", inputDescriptor),
+                    Descriptors.OBJECT_NAME, new String[] {
+                            "java/util/function/Consumer"
+            });
 
-			cw.visitSource(".dynamic", null);
+            cw.visitSource(".dynamic", null);
 
-			ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
+            ASMGeneratedType.ANNOTATION_ADDER.accept(cw, TYPE);
 
-			if (!isStatic) {
-				fieldVisitor = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
-				fieldVisitor.visitEnd();
-			}
-			{
-				mv = cw.visitMethod(ACC_PUBLIC, "<init>", "(%s)V".formatted(isStatic ? "" : ownerDescriptor), null,
-						null);
-				mv.visitCode();
-				Label l0 = new Label();
-				mv.visitLabel(l0);
-				mv.visitLineNumber(9, l0);
-				mv.visitVarInsn(ALOAD, 0);
-				mv.visitMethodInsn(INVOKESPECIAL, Descriptors.OBJECT_NAME, "<init>", "()V", false);
-				if (!isStatic) {
-					Label l1 = new Label();
-					mv.visitLabel(l1);
-					mv.visitLineNumber(10, l1);
-					mv.visitVarInsn(ALOAD, 0);
-					mv.visitVarInsn(ALOAD, 1);
-					mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
-				}
-				Label l2 = new Label();
-				mv.visitLabel(l2);
-				mv.visitLineNumber(11, l2);
-				mv.visitInsn(RETURN);
-				if (!isStatic) {
-					Label l3 = new Label();
-					mv.visitLabel(l3);
-					mv.visitLocalVariable("this", generatedNameDescriptor, null, l0, l3, 0);
-					mv.visitLocalVariable("instance", ownerDescriptor, null, l0, l3, 1);
-				}
-				mv.visitMaxs(isStatic ? 1 : 2, 2);
-				mv.visitEnd();
-			}
-			{
-				mv = cw.visitMethod(ACC_PUBLIC, "accept", consumerMethodDescriptor, null, null);
-				mv.visitCode();
-				Label label0 = new Label();
-				if (isStatic) {
-					mv.visitLabel(label0);
-					mv.visitLineNumber(9, label0);
-					mv.visitVarInsn(ALOAD, 1);
-					mv.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(), Type.getMethodDescriptor(method),
-							false);
-					Label l1 = new Label();
-					mv.visitLabel(l1);
-					mv.visitLineNumber(10, l1);
-					mv.visitInsn(RETURN);
-					Label l2 = new Label();
-					mv.visitLabel(l2);
-					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, l2, 0);
-					mv.visitLocalVariable("t", inputDescriptor, null, label0, l2, 1);
-				} else {
-					mv.visitLabel(label0);
-					mv.visitLineNumber(15, label0);
-					mv.visitVarInsn(ALOAD, 0);
-					mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
-					mv.visitVarInsn(ALOAD, 1);
-					mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), Type.getMethodDescriptor(method),
-							false);
-					Label l1 = new Label();
-					mv.visitLabel(l1);
-					mv.visitLineNumber(16, l1);
-					mv.visitInsn(RETURN);
-					Label l2 = new Label();
-					mv.visitLabel(l2);
-					mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, l2, 0);
-					mv.visitLocalVariable("t", inputDescriptor, null, label0, l2, 1);
-				}
-				mv.visitMaxs(isStatic ? 1 : 2, 2);
-				mv.visitEnd();
-			}
-			{
-				mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "accept", "(Ljava/lang/Object;)V", null,
-						null);
-				mv.visitCode();
-				Label l0 = new Label();
-				mv.visitLabel(l0);
-				mv.visitLineNumber(1, l0);
-				mv.visitVarInsn(ALOAD, 0);
-				mv.visitVarInsn(ALOAD, 1);
-				mv.visitTypeInsn(CHECKCAST, inputName);
-				mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "accept", consumerMethodDescriptor, false);
-				mv.visitInsn(RETURN);
-				mv.visitMaxs(2, 2);
-				mv.visitEnd();
-			}
-			cw.visitEnd();
-			final var bytes = cw.toByteArray();
-			PrivateUtils.LOGGER.debug("Finished generating ConsumerWrapper for method \"{}\"", method);
-			return new ConsumerWrapper<T>() {
+            if (!isStatic) {
+                fieldVisitor = cw.visitField(ACC_PRIVATE | ACC_FINAL, "instance", ownerDescriptor, null, null);
+                fieldVisitor.visitEnd();
+            }
+            {
+                mv = cw.visitMethod(ACC_PUBLIC, "<init>", String.format("(%s)V", isStatic ? "" : ownerDescriptor), null,
+                        null);
+                mv.visitCode();
+                Label l0 = new Label();
+                mv.visitLabel(l0);
+                mv.visitLineNumber(9, l0);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKESPECIAL, Descriptors.OBJECT_NAME, "<init>", "()V", false);
+                if (!isStatic) {
+                    Label l1 = new Label();
+                    mv.visitLabel(l1);
+                    mv.visitLineNumber(10, l1);
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitVarInsn(ALOAD, 1);
+                    mv.visitFieldInsn(PUTFIELD, generatedNameInternal, "instance", ownerDescriptor);
+                }
+                Label l2 = new Label();
+                mv.visitLabel(l2);
+                mv.visitLineNumber(11, l2);
+                mv.visitInsn(RETURN);
+                if (!isStatic) {
+                    Label l3 = new Label();
+                    mv.visitLabel(l3);
+                    mv.visitLocalVariable("this", generatedNameDescriptor, null, l0, l3, 0);
+                    mv.visitLocalVariable("instance", ownerDescriptor, null, l0, l3, 1);
+                }
+                mv.visitMaxs(isStatic ? 1 : 2, 2);
+                mv.visitEnd();
+            }
+            {
+                mv = cw.visitMethod(ACC_PUBLIC, "accept", consumerMethodDescriptor, null, null);
+                mv.visitCode();
+                Label label0 = new Label();
+                if (isStatic) {
+                    mv.visitLabel(label0);
+                    mv.visitLineNumber(9, label0);
+                    mv.visitVarInsn(ALOAD, 1);
+                    mv.visitMethodInsn(INVOKESTATIC, ownerName, method.getName(), Type.getMethodDescriptor(method),
+                            false);
+                    Label l1 = new Label();
+                    mv.visitLabel(l1);
+                    mv.visitLineNumber(10, l1);
+                    mv.visitInsn(RETURN);
+                    Label l2 = new Label();
+                    mv.visitLabel(l2);
+                    mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, l2, 0);
+                    mv.visitLocalVariable("t", inputDescriptor, null, label0, l2, 1);
+                } else {
+                    mv.visitLabel(label0);
+                    mv.visitLineNumber(15, label0);
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, generatedNameInternal, "instance", ownerDescriptor);
+                    mv.visitVarInsn(ALOAD, 1);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, ownerName, method.getName(), Type.getMethodDescriptor(method),
+                            false);
+                    Label l1 = new Label();
+                    mv.visitLabel(l1);
+                    mv.visitLineNumber(16, l1);
+                    mv.visitInsn(RETURN);
+                    Label l2 = new Label();
+                    mv.visitLabel(l2);
+                    mv.visitLocalVariable("this", generatedNameDescriptor, null, label0, l2, 0);
+                    mv.visitLocalVariable("t", inputDescriptor, null, label0, l2, 1);
+                }
+                mv.visitMaxs(isStatic ? 1 : 2, 2);
+                mv.visitEnd();
+            }
+            {
+                mv = cw.visitMethod(ACC_PUBLIC | ACC_BRIDGE | ACC_SYNTHETIC, "accept", "(Ljava/lang/Object;)V", null,
+                        null);
+                mv.visitCode();
+                Label l0 = new Label();
+                mv.visitLabel(l0);
+                mv.visitLineNumber(1, l0);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitVarInsn(ALOAD, 1);
+                mv.visitTypeInsn(CHECKCAST, inputName);
+                mv.visitMethodInsn(INVOKEVIRTUAL, generatedNameInternal, "accept", consumerMethodDescriptor, false);
+                mv.visitInsn(RETURN);
+                mv.visitMaxs(2, 2);
+                mv.visitEnd();
+            }
+            cw.visitEnd();
+            final byte[] bytes = cw.toByteArray();
+            PrivateUtils.LOGGER.debug("Finished generating ConsumerWrapper for method \"{}\"", method);
+            return new ConsumerWrapper<T>() {
 
-				@SuppressWarnings("rawtypes")
-				final Consumer staticInvoker = LambdaUtils.rethrowSupplier(
-						() -> isStatic ? (Consumer) getGeneratedClass().getDeclaredConstructor().newInstance() : null)
-						.get();
-				final ConstructorWrapper<?> constructorWrapper = isStatic ? null
-						: LambdaUtils.rethrowSupplier(
-								() -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
+                @SuppressWarnings("rawtypes")
+                final Consumer staticInvoker = LambdaUtils.rethrowSupplier(
+                        () -> isStatic ? (Consumer) getGeneratedClass().getDeclaredConstructor().newInstance() : null)
+                        .get();
+                final ConstructorWrapper<?> constructorWrapper = isStatic ? null
+                        : LambdaUtils.rethrowSupplier(
+                                () -> ConstructorWrapper.wrap(getGeneratedClass().getConstructor(owner))).get();
 
-				@Override
-				public byte[] getClassBytes() {
-					return bytes;
-				}
+                @Override
+                public byte[] getClassBytes() {
+                    return bytes;
+                }
 
-				@Override
-				public Class<?> getGeneratedClass() {
-					return ASMUtilsClassLoader.INSTANCE.define(generatedName, bytes);
-				}
+                @Override
+                public Class<?> getGeneratedClass() {
+                    return ASMUtilsClassLoader.INSTANCE.define(generatedName, bytes);
+                }
 
-				@Override
-				public Consumer<T> onTarget(Object target) {
-					if (isStatic) {
-						throw new UnsupportedOperationException(
-								"The method wrapped by this wrapper (\"%s\") is static! Use `accept` instead."
-										.formatted(method));
-					}
-					if (!owner.isAssignableFrom(target.getClass())) {
-						throw new ClassCastException(
-								"Object \"%s\" cannot be cast to the declaring class of the wrapped method \"%s\""
-										.formatted(target, owner));
-					}
-					return (Consumer<T>) constructorWrapper.invoke(target);
-				}
+                @Override
+                public Consumer<T> onTarget(Object target) {
+                    if (isStatic) {
+                        throw new UnsupportedOperationException(String.format(
+                                "The method wrapped by this wrapper (\"%s\") is static! Use `accept` instead.",
+                                method));
+                    }
+                    if (!owner.isAssignableFrom(target.getClass())) {
+                        throw new ClassCastException(String.format(
+                                "Object \"%s\" cannot be cast to the declaring class of the wrapped method \"%s\"",
+                                target, owner));
+                    }
+                    return (Consumer<T>) constructorWrapper.invoke(target);
+                }
 
-				@Override
-				public void accept(T t) {
-					if (isStatic) {
-						staticInvoker.accept(t);
-					} else {
-						throw new UnsupportedOperationException(
-								"The method wrapped by this wrapper (\"%s\") is not static! Use `onTarget` in order to get a consumer invoking the wrapped method on an instance."
-										.formatted(method));
-					}
-				}
+                @Override
+                public void accept(T t) {
+                    if (isStatic) {
+                        staticInvoker.accept(t);
+                    } else {
+                        throw new UnsupportedOperationException(String.format(
+                                "The method wrapped by this wrapper (\"%s\") is not static! Use `onTarget` in order to get a consumer invoking the wrapped method on an instance.",
+                                method));
+                    }
+                }
 
-				@Override
-				public boolean isStatic() {
-					return isStatic;
-				}
+                @Override
+                public boolean isStatic() {
+                    return isStatic;
+                }
 
-				@Override
-				public Class<T> getInputType() {
-					return (Class<T>) parameterType;
-				}
+                @Override
+                public Class<T> getInputType() {
+                    return (Class<T>) parameterType;
+                }
 
-			};
-		});
-	}
+            };
+        });
+    }
 
-	/**
-	 * If the method wrapped by this wrapper is <strong>not</strong> static, returns
-	 * a {@link java.util.function.Consumer} that accepts the wrapped method on the
-	 * {@code target}.
-	 * 
-	 * @param  target                        the target that the returned consumer
-	 *                                       accepts the wrapped method on
-	 * @return                               the consumer
-	 * @throws UnsupportedOperationException if the method wrapped by this wrapper
-	 *                                       is <strong>static</strong>
-	 * @throws ClassCastException            if the {@code target} cannot be cast to
-	 *                                       the declaring class of the wrapped
-	 *                                       method
-	 */
-	@NotNull
-	Consumer<T> onTarget(@NotNull Object target);
+    /**
+     * If the method wrapped by this wrapper is <strong>not</strong> static, returns
+     * a {@link java.util.function.Consumer} that accepts the wrapped method on the
+     * {@code target}.
+     * 
+     * @param  target                        the target that the returned consumer
+     *                                       accepts the wrapped method on
+     * @return                               the consumer
+     * @throws UnsupportedOperationException if the method wrapped by this wrapper
+     *                                       is <strong>static</strong>
+     * @throws ClassCastException            if the {@code target} cannot be cast to
+     *                                       the declaring class of the wrapped
+     *                                       method
+     */
+    @NotNull
+    Consumer<T> onTarget(@NotNull Object target);
 
-	/**
-	 * If the method wrapped by this wrapper is <strong>static</strong>, the method
-	 * is invoked with the inputted argument.
-	 * 
-	 * @param  t                             the input argument
-	 * @throws UnsupportedOperationException if the method wrapped by this wrapper,
-	 *                                       is <strong>not</strong> static
-	 */
-	@Override
-	void accept(T t);
+    /**
+     * If the method wrapped by this wrapper is <strong>static</strong>, the method
+     * is invoked with the inputted argument.
+     * 
+     * @param  t                             the input argument
+     * @throws UnsupportedOperationException if the method wrapped by this wrapper,
+     *                                       is <strong>not</strong> static
+     */
+    @Override
+    void accept(T t);
 
-	/**
-	 * Checks if the method wrapped by this wrapper is static.
-	 * 
-	 * @return if the method wrapped by this wrapper is static
-	 */
-	boolean isStatic();
+    /**
+     * Checks if the method wrapped by this wrapper is static.
+     * 
+     * @return if the method wrapped by this wrapper is static
+     */
+    boolean isStatic();
 
-	/**
-	 * Returns the input type of the wrapped method.
-	 * 
-	 * @return the input type of the wrapped method
-	 */
-	@NotNull
-	Class<T> getInputType();
+    /**
+     * Returns the input type of the wrapped method.
+     * 
+     * @return the input type of the wrapped method
+     */
+    @NotNull
+    Class<T> getInputType();
 
-	//@formatter:off
+    //@formatter:off
 	class PrivateUtils {
 		private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerWrapper.class);
 		private static final Map<Method, ConsumerWrapper<?>> CACHE = new HashMap<>();
 		private static final AtomicInteger CREATED_WRAPPERS = new AtomicInteger();
 		private static String generateName(Method method) {
-			final var isStatic = Modifier.isStatic(method.getModifiers());
-			return ClassNameGenerator.resolveOnBasePackage("%s$%s_%s_%s$%s_%s".formatted(
+			final boolean isStatic = Modifier.isStatic(method.getModifiers());
+			return ClassNameGenerator.resolveOnBasePackage(String.format("%s$%s_%s_%s$%s_%s",
 					ConsumerWrapper.class.getSimpleName(),
 					CREATED_WRAPPERS.getAndIncrement(),
 					method.getDeclaringClass().getSimpleName(),

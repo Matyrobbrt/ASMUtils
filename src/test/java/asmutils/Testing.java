@@ -28,51 +28,74 @@
 package asmutils;
 
 import java.lang.reflect.Constructor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.matyrobbrt.asmutils.wrapper.ConstructorWrapper;
+import io.github.matyrobbrt.asmutils.wrapper.ConsumerWrapper;
 import io.github.matyrobbrt.asmutils.wrapper.SupplierWrapper;
 
 @SuppressWarnings({
-		"static-method", "unchecked"
+        "static-method", "unchecked"
 })
 class Testing {
 
-	@Test
-	void testConstructorWrapper() throws Exception {
-		final var wrapper = ConstructorWrapper
-				.<ConstructorWrapperTestObject>wrap((Constructor<ConstructorWrapperTestObject>) ConstructorWrapperTestObject.class.getDeclaredConstructors()[0]);
-		final var thing = wrapper.invoke(null, null, "thing c", null, null, null, null, "thing h");
-		assertThat(thing.c).isSameAs("thing c");
-		assertThat(thing.h).isSameAs("thing h");
-	}
+    @Test
+    void testConstructorWrapper() throws Exception {
+        final ConstructorWrapper<ConstructorWrapperTestObject> wrapper = ConstructorWrapper
+                .wrap((Constructor<ConstructorWrapperTestObject>) ConstructorWrapperTestObject.class
+                        .getDeclaredConstructors()[0]);
+        final ConstructorWrapperTestObject thing = wrapper.invoke(null, null, "thing c", null, null, null, null,
+                "thing h");
+        assertThat(thing.c).isSameAs("thing c");
+        assertThat(thing.h).isSameAs("thing h");
+    }
 
-	@Test
-	void testSupplierWrapperOnInstance() throws Exception {
-		final var wrapper = SupplierWrapper.<String>wrapMethod(SupplierWrapperTestObject.class.getDeclaredMethod("print"));
-		assertThat(wrapper.onTarget(new SupplierWrapperTestObject("yes")).get()).isSameAs("yes");
-	}
+    @Test
+    void testSupplierWrapperOnInstance() throws Exception {
+        final SupplierWrapper<String> wrapper = SupplierWrapper
+                .wrapMethod(SupplierWrapperTestObject.class.getDeclaredMethod("print"));
+        assertThat(wrapper.onTarget(new SupplierWrapperTestObject("yes")).get()).isSameAs("yes");
+    }
 
-	@Test
-	void testSupplierWrapperStatic() throws Exception {
-		final var wrapper = SupplierWrapper.<String>wrapMethod(SupplierWrapperTestObject.class.getDeclaredMethod("hmm"));
-		System.out.println(wrapper.get());
-		assertThat(wrapper.get()).isSameAs("hmm");
-	}
+    @Test
+    void testSupplierWrapperStatic() throws Exception {
+        final SupplierWrapper<String> wrapper = SupplierWrapper
+                .wrapMethod(SupplierWrapperTestObject.class.getDeclaredMethod("hmm"));
+        System.out.println(wrapper.get());
+        assertThat(wrapper.get()).isSameAs("hmm");
+    }
 
-	@Test
-	void testSupplierWrapperOnInstanceField() throws Exception {
-		final var wrapper = SupplierWrapper.<String>wrapField(TestObject.class.getDeclaredField("thing"));
-		assertThat(wrapper.onTarget(new TestObject("yes")).get()).isSameAs("yes");
-	}
+    @Test
+    void testSupplierWrapperOnInstanceField() throws Exception {
+        final SupplierWrapper<String> wrapper = SupplierWrapper.wrapField(TestObject.class.getDeclaredField("thing"));
+        assertThat(wrapper.onTarget(new TestObject("yes")).get()).isSameAs("yes");
+    }
 
-	@Test
-	void testSupplierWrapperOnStaticField() throws Exception {
-		final var wrapper = SupplierWrapper.<String>wrapField(TestObject.class.getDeclaredField("THING"));
-		assertThat(wrapper.get()).isSameAs("ye");
-	}
+    @Test
+    void testSupplierWrapperOnStaticField() throws Exception {
+        final SupplierWrapper<String> wrapper = SupplierWrapper.wrapField(TestObject.class.getDeclaredField("THING"));
+        assertThat(wrapper.get()).isSameAs("ye");
+    }
 
+    @Test
+    void testConsumerWrapperOnInstance() throws Exception {
+        final ConsumerWrapper<AtomicInteger> wrapper = ConsumerWrapper
+                .wrap(ConsumerWrapperTestObject.class.getDeclaredMethod("change", AtomicInteger.class));
+        final AtomicInteger integer = new AtomicInteger();
+        wrapper.onTarget(new ConsumerWrapperTestObject(12)).accept(integer);
+        assertThat(integer.get()).isSameAs(12);
+    }
+
+    @Test
+    void testConsumerWrapperStatic() throws Exception {
+        final ConsumerWrapper<AtomicInteger> wrapper = ConsumerWrapper
+                .wrap(ConsumerWrapperTestObject.class.getDeclaredMethod("hmm", AtomicInteger.class));
+        final AtomicInteger integer = new AtomicInteger();
+        wrapper.accept(integer);
+        assertThat(integer.get()).isSameAs(12);
+    }
 }
