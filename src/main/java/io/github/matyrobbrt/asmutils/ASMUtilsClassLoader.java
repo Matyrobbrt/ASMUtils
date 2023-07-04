@@ -27,15 +27,15 @@
 
 package io.github.matyrobbrt.asmutils;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class ASMUtilsClassLoader extends ClassLoader {
 
     public static final ASMUtilsClassLoader INSTANCE = new ASMUtilsClassLoader();
 
-    private final Map<String, Class<?>> cache = new HashMap<>();
+    private final Map<String, Class<?>> cache = new ConcurrentHashMap<>();
 
     private ASMUtilsClassLoader() {
         super(null);

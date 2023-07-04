@@ -27,13 +27,13 @@
 
 package io.github.matyrobbrt.asmutils.wrapper;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
+import io.github.matyrobbrt.asmutils.ASMGeneratedType;
+import io.github.matyrobbrt.asmutils.ASMUtilsClassLoader;
+import io.github.matyrobbrt.asmutils.ClassNameGenerator;
+import io.github.matyrobbrt.asmutils.Descriptors;
+import io.github.matyrobbrt.asmutils.JavaGetter;
+import io.github.matyrobbrt.asmutils.LambdaUtils;
+import io.github.matyrobbrt.asmutils.function.ConstructorInvoker;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
@@ -43,18 +43,35 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import static io.github.matyrobbrt.asmutils.Descriptors.OBJECT_ARRAY_DESCRIPTOR;
 import static io.github.matyrobbrt.asmutils.Descriptors.OBJECT_DESCRIPTOR;
 import static io.github.matyrobbrt.asmutils.Descriptors.OBJECT_NAME;
-import static org.objectweb.asm.Opcodes.*;
-
-import io.github.matyrobbrt.asmutils.ASMGeneratedType;
-import io.github.matyrobbrt.asmutils.ASMUtilsClassLoader;
-import io.github.matyrobbrt.asmutils.ClassNameGenerator;
-import io.github.matyrobbrt.asmutils.Descriptors;
-import io.github.matyrobbrt.asmutils.JavaGetter;
-import io.github.matyrobbrt.asmutils.LambdaUtils;
-import io.github.matyrobbrt.asmutils.function.ConstructorInvoker;
+import static org.objectweb.asm.Opcodes.AALOAD;
+import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ACC_VARARGS;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ARETURN;
+import static org.objectweb.asm.Opcodes.BIPUSH;
+import static org.objectweb.asm.Opcodes.CHECKCAST;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.PUTSTATIC;
+import static org.objectweb.asm.Opcodes.RETURN;
 
 /**
  * A wrapper for <i>public</i> constructors. <br>
@@ -305,7 +322,7 @@ public interface ConstructorWrapper<T> extends Wrapper, ConstructorInvoker<T> {
 	class PrivateUtils {
 		private static final String SYNTHETHIC_INVOKE_DESCRIPTOR = String.format("(%s)%s", OBJECT_ARRAY_DESCRIPTOR, OBJECT_DESCRIPTOR);
 		private static final Logger LOGGER = LoggerFactory.getLogger(ConstructorWrapper.class);
-		private static final Map<Constructor<?>, ConstructorWrapper<?>> CACHE = new HashMap<>();
+		private static final Map<Constructor<?>, ConstructorWrapper<?>> CACHE = new ConcurrentHashMap<>();
 		private static final AtomicInteger CREATED_WRAPPERS = new AtomicInteger();
 		private static <T> String generateName(Constructor<T> ct) {
 			return ClassNameGenerator.resolveOnBasePackage(String.format("a.%s$%s_%s_%s",

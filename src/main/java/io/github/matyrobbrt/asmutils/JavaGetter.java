@@ -82,6 +82,6 @@ public final class JavaGetter {
     }
 
     public static int versionToOpcode(int version) {
-        return TO_OP_CODE.get(version);
+        return TO_OP_CODE.getOrDefault(version, V18);
     }
 }

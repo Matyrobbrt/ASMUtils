@@ -27,15 +27,11 @@
 
 package io.github.matyrobbrt.asmutils.wrapper;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
+import io.github.matyrobbrt.asmutils.ASMGeneratedType;
+import io.github.matyrobbrt.asmutils.ASMUtilsClassLoader;
+import io.github.matyrobbrt.asmutils.ClassNameGenerator;
+import io.github.matyrobbrt.asmutils.JavaGetter;
+import io.github.matyrobbrt.asmutils.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
@@ -45,16 +41,33 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+
 import static io.github.matyrobbrt.asmutils.Descriptors.OBJECT_DESCRIPTOR;
 import static io.github.matyrobbrt.asmutils.Descriptors.OBJECT_NAME;
 import static io.github.matyrobbrt.asmutils.Descriptors.SUPPLIER_NAME;
-import static org.objectweb.asm.Opcodes.*;
-
-import io.github.matyrobbrt.asmutils.ASMGeneratedType;
-import io.github.matyrobbrt.asmutils.ASMUtilsClassLoader;
-import io.github.matyrobbrt.asmutils.ClassNameGenerator;
-import io.github.matyrobbrt.asmutils.JavaGetter;
-import io.github.matyrobbrt.asmutils.LambdaUtils;
+import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ARETURN;
+import static org.objectweb.asm.Opcodes.GETFIELD;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.PUTFIELD;
+import static org.objectweb.asm.Opcodes.RETURN;
 
 /**
  * A wrapper for <i>public</i> methods with no parameters and a return type, or
@@ -547,7 +560,7 @@ public interface SupplierWrapper<T> extends Wrapper, Supplier<T> {
 	class PrivateUtils {
 
 		private static final Logger LOGGER = LoggerFactory.getLogger(SupplierWrapper.class);
-		private static final Map<Member, SupplierWrapper<?>> CACHE = new HashMap<>();
+		private static final Map<Member, SupplierWrapper<?>> CACHE = new ConcurrentHashMap<>();
 		private static final AtomicInteger CREATED_WRAPPERS = new AtomicInteger();
 
 		private static String generateName(Method method) {
